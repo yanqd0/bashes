@@ -20,9 +20,19 @@ git_config () {
     git config --global core.editor vim
     git config --global push.default simple
     git config --global color.ui true
+    git config --global pull.rebase true
 
     git config --global alias.amend 'commit --amend --no-edit'
-    git config --global alias.s 'status -s'
+    git config --global alias.last 'log -1'
+    git config --global alias.unstage 'reset HEAD --'
+    git config --global alias.co checkout
+    git config --global alias.br branch
+    git config --global alias.cm commit
+    git config --global alias.f fetch
+    git config --global alias.ps push
+    git config --global alias.pl pull
+    git config --global alias.st status
+    git config --global alias.s 'status -sb'
     git config --global alias.l "log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
     git config --global alias.lg 'log --graph --full-history --all --color --pretty=format:"%x1b[31m%h%x09%x1b[32m%d%x1b[0m%x20%s"'
 }
