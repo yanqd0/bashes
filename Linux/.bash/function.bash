@@ -85,5 +85,18 @@ cmd2sh () {
 }
 # }}}
 
+# confal: Configurate all configurable commands. {{{
+confal () {
+    script=~/.bash/config_all.bash
+    if [ -f $script ]
+    then
+        $script $*
+    else
+        echo $script not found!
+    fi
+}
+# }}}
+
+
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=80 colorcolumn=80:
