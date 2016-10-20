@@ -1,6 +1,6 @@
 # bashes
 
-![progress](http://progressed.io/bar/1?title=developing)
+![progress](http://progressed.io/bar/50?title=developing)
 
 ## Description
 

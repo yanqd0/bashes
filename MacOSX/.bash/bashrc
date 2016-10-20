@@ -1,0 +1,43 @@
+### The local bashrc ###
+
+
+# export {{{
+export HISTCONTROL=ignoredups:ignorespace
+export HISTSIZE=1000
+export HISTFILESIZE=2000
+# ls
+export CLICOLOR=1                   # Colorize `ls`
+# Disable this because of `make` completion error
+# export CLICOLOR_FORCE=1             # Always
+export LSCOLORS=gxfxaxdxcxegedabagacad
+
+# grep
+export GREP_OPTIONS='--color=auto'
+# export GREP_COLOR='5;40'
+
+# }}}
+
+# shopt {{{
+shopt -s checkwinsize               # Check the window size and update if necessary,
+shopt -s histappend                 # Append to the history file
+shopt -s cdspell                    # Auto amend directory error
+shopt -s extglob                    # Several extended pattern matching operators are recognized
+# }}}
+
+# sub configs {{{
+if [ -f ~/.bash/function.bash ]
+then
+    . ~/.bash/function.bash
+fi
+
+if [ -f ~/.bash/alias.bash ]
+then
+    . ~/.bash/alias.bash
+fi
+# }}}
+
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
+# vim: set textwidth=100 colorcolumn=100:
