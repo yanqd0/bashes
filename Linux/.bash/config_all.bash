@@ -22,7 +22,7 @@ git_config () {
     git config --global color.ui true
     git config --global pull.rebase true
 
-    git config --global alias.amend 'commit --amend --no-edit'
+    git config --global alias.amend 'commit --amend --no-edit --reset-author'
     git config --global alias.last 'log -1'
     git config --global alias.unstage 'reset HEAD --'
     git config --global alias.co checkout
