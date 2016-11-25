@@ -2,13 +2,13 @@
 
 
 # mcd: mkdir and cd into it {{{
-mcd () {
+function mcd {
     mkdir -p "$1" && cd "$1";
 }
 # }}}
 
 # myextract: Extract various condensed files {{{
-myextract () {
+function myextract {
     if [ -f $1 ]
     then
         case $1 in
@@ -23,7 +23,7 @@ myextract () {
             *.zip)       unzip $1       ;;
             *.Z)         uncompress $1  ;;
             *.7z)        7z x $1        ;;
-            *)     echo "'$1' cannot be extracted via extract()" ;;
+            *)     echo "'$1' cannot be extracted via myextract" ;;
         esac
     else
         echo "'$1' is not a valid file"
@@ -32,7 +32,7 @@ myextract () {
 # }}}
 
 # tagsmgr: Make and manage tags for Vim {{{
-tagsmgr () {
+function tagsmgr {
     script=~/.bash/tags_manager.bash
     if [ -f $script ]
     then
@@ -44,7 +44,7 @@ tagsmgr () {
 # }}}
 
 # printcolor: Print the supported color of current bash emulator. {{{
-printcolor () {
+function printcolor {
     script=~/.bash/print_color.bash
     if [ -f $script ]
     then
@@ -56,7 +56,7 @@ printcolor () {
 # }}}
 
 # cmd2sh: Save commands to a file {{{
-cmd2sh () {
+function cmd2sh {
     if [[ -n $2 ]]
     then
         num=$2
@@ -86,7 +86,7 @@ cmd2sh () {
 # }}}
 
 # confal: Configurate all configurable commands. {{{
-confal () {
+function confal {
     script=~/.bash/config_all.bash
     if [ -f $script ]
     then
