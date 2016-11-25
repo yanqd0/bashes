@@ -1,1 +1,0 @@
-../../Linux/.bash/alias.bash

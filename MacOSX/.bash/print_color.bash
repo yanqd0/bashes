@@ -1,1 +1,0 @@
-../../Linux/.bash/print_color.bash

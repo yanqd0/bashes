@@ -2,7 +2,7 @@
 
 
 # ls {{{
-alias ls='ls --color=always'        # Colorize `ls`
+# alias ls='ls --color=always'        # Colorize `ls`
 alias ll='ls -AhlF'                 # List files and directories with human readable detailed infomation
 alias la='ls -A'                    # Show All files
 alias l.='ls -d .*'                 # Show hidden files only

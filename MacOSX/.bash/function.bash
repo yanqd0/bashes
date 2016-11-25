@@ -1,1 +1,0 @@
-../../Linux/.bash/function.bash
