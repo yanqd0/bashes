@@ -9,7 +9,8 @@ bash_config () {
 # vim: set textwidth=80 colorcolumn=80:
 
 # Personal config {{{
-if [ -f ~/.bash/bashrc ]; then
+if [ -f ~/.bash/bashrc ]
+then
     . ~/.bash/bashrc
 fi
 # }}}
