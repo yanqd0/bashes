@@ -97,6 +97,12 @@ confal () {
 }
 # }}}
 
+# ignore: Generate .gitignore file from gitignore.io API. {{{
+function gitignore {
+    curl -L -s https://www.gitignore.io/api/$@
+}
+# }}}
+
 
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=80 colorcolumn=80:
