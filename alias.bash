@@ -41,6 +41,10 @@ alias df='df -h'                    # Human readable df
 alias rm='rm -i'                    # rm will be more safe by reminding
 alias tm='ps -ef | grep'            # Search for process
 alias vi='vim --noplugin'           # Set vi as vim
+if [[ `uname` = 'Darwin' ]]
+then
+    alias macvim='open -a MacVim'   # open MacVim app quickly
+fi
 # Show which commands you use the most
 alias freq='cut -f1 -d" " ~/.bash_history | sort | uniq -c | sort -nr | head -n 30'
 # }}}
