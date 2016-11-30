@@ -107,6 +107,17 @@ function gitignore {
 }
 # }}}
 
+# mkdatedir: Make a directory by date. {{{
+function mkdatedir {
+    dir=`date +%Y`/`date +%m`/`date +%d`
+    mkdir -p $dir
+    if [[ -n $1 ]]
+    then
+        touch $dir/$1
+    fi
+}
+# }}}
+
 
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=80 colorcolumn=80:
