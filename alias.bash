@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
 
 
+if [[ `uname` = 'Darwin' ]]
+then
+    alias macvim='open -a MacVim'   # open MacVim app quickly
+elif [[ `uname` = 'Linux' ]]
+then
+    alias xopen='xdg-open'          # Open files in a terminal
+    alias ls='ls --color=auto'      # Colorize `ls`
+fi
+
 # ls {{{
-# alias ls='ls --color=always'        # Colorize `ls`
-alias ll='ls -AhlF'                 # List files and directories with human readable detailed infomation
+alias ll='ls -AhlF'                 # List files and directories with human readable infomation
 alias la='ls -A'                    # Show All files
 alias l.='ls -d .*'                 # Show hidden files only
 alias lsf='ls -hl | grep ^d'        # Show files only
@@ -45,14 +53,6 @@ alias vi='vim --noplugin'           # Set vi as vim
 alias freq='cut -f1 -d" " ~/.bash_history | sort | uniq -c | sort -nr | head -n 30'
 # }}}
 
-
-if [[ `uname` = 'Darwin' ]]
-then
-    alias macvim='open -a MacVim'   # open MacVim app quickly
-elif [[ `uname` = 'Linux' ]]
-then
-    alias xopen='xdg-open'
-fi
 
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=100 colorcolumn=100:
