@@ -3,6 +3,13 @@
 # export {{{
 export PATH=$PATH:$HOME/.local/bin
 
+# Golang {{{
+export GOROOT=$HOME/.golang/go
+export GOPATH=$HOME/.golang/path
+export GOROOT_BOOTSTRAP=$HOME/.golang/go1.7
+export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+# }}}
+
 export HISTCONTROL=ignoredups:ignorespace
 export HISTSIZE=1000
 export HISTFILESIZE=2000
