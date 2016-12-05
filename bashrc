@@ -44,7 +44,13 @@ shopt -s extglob                    # Several extended pattern matching operator
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
 # PS1 {{{
-PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+POWERLINE=$(pip show powerline-status | awk '/Location:/{print $2 "/powerline/bindings/bash/powerline.sh"}')
+if [ -n "$POWERLINE" ]
+then
+    check_source $POWERLINE
+else
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+fi
 # }}}
 
 # Bash completion {{{
