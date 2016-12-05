@@ -45,6 +45,7 @@ alias glg='git log --graph --full-history --all --color --pretty=format:"%x1b[31
 # }}}
 
 # Other {{{
+alias pipinst='pip install --user'  # Install pip only for the current user.
 alias df='df -h'                    # Human readable df
 alias rm='rm -i'                    # rm will be more safe by reminding
 alias tm='ps -ef | grep'            # Search for process
