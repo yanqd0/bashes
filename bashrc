@@ -1,5 +1,14 @@
 ### The local bashrc ###
 
+# Previous configs {{{
+if [ -f ~/.bash/function.bash ]
+then
+    . ~/.bash/function.bash
+fi
+
+check_source ~/.bash/alias.bash
+# }}}
+
 # export {{{
 export PATH=$PATH:$HOME/.local/bin
 
@@ -36,18 +45,6 @@ shopt -s extglob                    # Several extended pattern matching operator
 
 # PS1 {{{
 PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-# }}}
-
-# sub configs {{{
-if [ -f ~/.bash/function.bash ]
-then
-    . ~/.bash/function.bash
-fi
-
-if [ -f ~/.bash/alias.bash ]
-then
-    . ~/.bash/alias.bash
-fi
 # }}}
 
 # Bash completion {{{
