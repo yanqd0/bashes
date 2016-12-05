@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 
 
+# check_source: Check if valid then source the file {{{
+function check_source {
+    if [ -f $1 ]
+    then
+        source $1
+    elif [ -f $2 ]
+    then
+        source $2
+    fi
+}
+# }}}
+
 # mcd: mkdir and cd into it {{{
 function mcd {
     mkdir -p "$1" && cd "$1";
