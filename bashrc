@@ -16,7 +16,7 @@ export PATH=$HOME/.local/bin:$PATH
 export GOROOT=$HOME/.golang/go
 export GOPATH=$HOME/.golang/path
 export GOROOT_BOOTSTRAP=$HOME/.golang/go1.4
-export GOROOT_FINAL=”${GOROOT_FINAL:-$GOROOT}”
+export GOROOT_FINAL=${GOROOT_FINAL:-$GOROOT}
 export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 # }}}
 
