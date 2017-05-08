@@ -130,6 +130,17 @@ function mkdatedir {
 }
 # }}}
 
+# init_sys: Initialize a Linux system. {{{
+function init_sys {
+    script=$HOME/.bash/init_sys.bash
+    if [ -f $script ]
+    then
+        $script $*
+    else
+        echo $script not found!
+    fi
+}
+# }}}
 
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=80 colorcolumn=80:
