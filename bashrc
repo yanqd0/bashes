@@ -32,7 +32,6 @@ export CLICOLOR=1                   # Colorize `ls`
 export LSCOLORS=gxfxaxdxcxegedabagacad
 
 # export GREP_COLOR='1;43'
-export GREP_OPTIONS='--color=auto'
 # }}}
 
 # shopt {{{
