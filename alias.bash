@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 
-if [[ `uname` = 'Darwin' ]]
+if [[ $(uname) = 'Darwin' ]]
 then
     alias macvim='open -a MacVim'   # open MacVim app quickly
-elif [[ `uname` = 'Linux' ]]
+elif [[ $(uname) = 'Linux' ]]
 then
     alias xopen='xdg-open'          # Open files in a terminal
     alias ls='ls --color=auto'      # Colorize `ls`
