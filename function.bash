@@ -3,45 +3,45 @@
 
 # check_source: Check if valid then source the file {{{
 function check_source {
-    if [ -f $1 ]
+    if [ -f "$1" ]
     then
-        source $1
-    elif [ -f $2 ]
+        source "$1"
+    elif [ -f "$2" ]
     then
-        source $2
+        source "$2"
     fi
 }
 # }}}
 
 # mcd: mkdir and cd into it {{{
 function mcd {
-    mkdir -p "$1" && cd "$1";
+    mkdir -p "$1" && cd "$1"
 }
 # }}}
 
 # myextract: Extract various condensed files {{{
 function myextract {
-    if [ -f $1 ]
+    if [ -f "$1" ]
     then
-        case $1 in
-            *.tar.bz2)   tar xjf $1     ;;
-            *.tar.gz)    tar xzf $1     ;;
-            *.bz2)       bunzip2 $1     ;;
-            *.rar)       unrar e $1     ;;
-            *.gz)        gunzip $1      ;;
-            *.tar)       tar xf $1      ;;
-            *.tbz2)      tar xjf $1     ;;
-            *.tgz)       tar xzf $1     ;;
-            *.zip)       unzip $1       ;;
-            *.jar)       unzip $1       ;;
-            *.aar)       unzip $1       ;;
-            *.apk)       unzip $1       ;;
-            *.Z)         uncompress $1  ;;
-            *.7z)        7z x $1        ;;
-            *)     echo "'$1' cannot be extracted via myextract" ;;
+        case "$1" in
+            *.tar.bz2)   tar xjf "$1"     ;;
+            *.tar.gz)    tar xzf "$1"     ;;
+            *.bz2)       bunzip2 "$1"     ;;
+            *.rar)       unrar e "$1"     ;;
+            *.gz)        gunzip "$1"      ;;
+            *.tar)       tar xf "$1"      ;;
+            *.tbz2)      tar xjf "$1"     ;;
+            *.tgz)       tar xzf "$1"     ;;
+            *.zip)       unzip "$1"       ;;
+            *.jar)       unzip "$1"       ;;
+            *.aar)       unzip "$1"       ;;
+            *.apk)       unzip "$1"       ;;
+            *.Z)         uncompress "$1"  ;;
+            *.7z)        7z x "$1"        ;;
+            *)     echo "$1 cannot be extracted via myextract" ;;
         esac
     else
-        echo "'$1' is not a valid file"
+        echo "$1 is not a valid file"
     fi
 }
 # }}}
@@ -51,7 +51,7 @@ function tagsmgr0 {
     script=~/.bash/tags_manager.bash
     if [ -f $script ]
     then
-        $script $*
+        $script "$*"
     else
         echo $script not found!
     fi
@@ -63,7 +63,7 @@ function printcolor {
     script=~/.bash/print_color.bash
     if [ -f $script ]
     then
-        $script $*
+        $script "$*"
     else
         echo $script not found!
     fi
@@ -88,12 +88,12 @@ function cmd2sh {
             return
         fi
 
-        echo "#!/usr/bin/env bash" > $file
-        echo "" >> $file
+        echo "#!/usr/bin/env bash" > "$file"
+        echo "" >> "$file"
         fc -nl | tail -$num \
             | sed "s/	 //g" \
-            | sed "s/  *$//g" >> $file
-        chmod +x $file
+            | sed "s/  *$//g" >> "$file"
+        chmod +x "$file"
     else
         echo "Usage: cmd2sh <FILE_file> [<CMD_NUM>]"
     fi
@@ -105,7 +105,7 @@ function confal {
     script=~/.bash/config_all.bash
     if [ -f $script ]
     then
-        $script $*
+        $script "$*"
     else
         echo $script not found!
     fi
@@ -115,17 +115,17 @@ function confal {
 # ignore: Generate .gitignore file from gitignore.io API. {{{
 # See: https://www.gitignore.io/docs
 function gitignore {
-    curl -L -s https://www.gitignore.io/api/$@
+    curl -L -s "https://www.gitignore.io/api/$*"
 }
 # }}}
 
 # mkdatedir: Make a directory by date. {{{
 function mkdatedir {
-    dir=`date +%Y`/`date +%m`/`date +%d`
-    mkdir -p $dir
+    dir=$(date +%Y)/$(date +%m)/$(date +%d)
+    mkdir -p "$dir"
     if [[ -n $1 ]]
     then
-        touch $dir/$1
+        touch "$dir/$1"
     fi
 }
 # }}}
@@ -133,11 +133,11 @@ function mkdatedir {
 # init_sys: Initialize a Linux system. {{{
 function init_sys {
     script=$HOME/.bash/init_sys.bash
-    if [ -f $script ]
+    if [ -f "$script" ]
     then
-        $script $*
+        $script "$*"
     else
-        echo $script not found!
+        echo "$script not found!"
     fi
 }
 # }}}
@@ -146,7 +146,7 @@ function init_sys {
 function docker-clean {
     docker rm $(docker ps -aq) 2> /dev/null
     docker rmi $(docker images -qf "dangling=true") 2> /dev/null
-    docker volume prune -f 2> /dev/null
+    # docker volume prune -f 2> /dev/null
 }
 # }}}
 
