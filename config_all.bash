@@ -35,6 +35,7 @@ git_config () {
     git config --global alias.st status
     git config --global alias.s 'status -sb'
     git config --global alias.submadd 'submodule add'
+    git config --global alias.tags 'tag -ln'
     git config --global alias.recursive-clone 'clone --recurse-submodules'
     git config --global alias.l "log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
     git config --global alias.lg 'log --graph --full-history --all --color --pretty=format:"%x1b[31m%h%x09%x1b[32m%d%x1b[0m%x20%s"'
