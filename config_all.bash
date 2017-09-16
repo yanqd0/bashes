@@ -53,12 +53,12 @@ main () {
             echo '  git'
             ;;
         *)
-            echo $1 is not supported yet!
+            echo "$1" is not supported yet!
             echo You can write it in ~/.bash/config_all.bash;;
     esac
 }
 
-main $*
+main "$@"
 
 # vim: set shiftwidth=4 softtabstop=-1 expandtab:
 # vim: set foldmethod=indent foldnestmax=1:
