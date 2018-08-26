@@ -150,5 +150,11 @@ function docker-clean {
 }
 # }}}
 
+# ctree: View a colorful tree with less {{{
+function ctree {
+    tree -C "$1" | less -R
+}
+# }}}
+
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=80 colorcolumn=80:
