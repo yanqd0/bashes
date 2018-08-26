@@ -156,5 +156,22 @@ function ctree {
 }
 # }}}
 
+# cless: A colorful less {{{
+function cless {
+    pygmentize "$1" | less -NR
+}
+# }}}
+
+# cless: A colorful less {{{
+function cmore {
+    if [[ $2 ]]
+    then
+        pygmentize "$1" | more "$2"
+    else
+        pygmentize "$1" | more
+    fi
+}
+# }}}
+
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=80 colorcolumn=80:
