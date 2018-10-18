@@ -22,6 +22,7 @@ git_config () {
     git config --global push.default simple
     git config --global color.ui true
     git config --global pull.rebase true
+    git config --global credential.helper store
 
     git config --global alias.amend 'commit --amend --no-edit --reset-author'
     git config --global alias.last 'log -1'
