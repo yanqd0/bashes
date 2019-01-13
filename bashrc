@@ -80,5 +80,7 @@ fi
 # make less more friendly for non-text input files, see lesspipe(1)
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
+check_source ~/.fzf.bash
+
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=100 colorcolumn=100:
