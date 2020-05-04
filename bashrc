@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 ### The local bashrc ###
 
 # Previous configs {{{
@@ -13,12 +15,12 @@ check_source ~/.bash/alias.bash
 export PATH=$HOME/.local/bin:$PATH
 
 # Golang {{{
-export GOROOT=$HOME/.golang/go
-export GOPATH=$HOME/.golang/path
+# export GOROOT=$HOME/.golang/go
+# export GOPATH=$HOME/.golang/path
 # The bootstrap should be the branch release-branch.go1.4 of go
-export GOROOT_BOOTSTRAP=$HOME/.golang/bootstrap
-export GOROOT_FINAL=${GOROOT_FINAL:-$GOROOT}
-export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+# export GOROOT_BOOTSTRAP=$HOME/.golang/bootstrap
+# export GOROOT_FINAL=${GOROOT_FINAL:-$GOROOT}
+# export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 # }}}
 
 export HISTCONTROL=ignoredups:ignorespace
@@ -81,6 +83,12 @@ fi
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
 check_source ~/.fzf.bash
+check_source /usr/share/autojump/autojump.bash
+
+if [ -d ~/.yarn/bin ]
+then
+    export PATH=$HOME/.yarn/bin:$PATH
+fi
 
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=100 colorcolumn=100:
