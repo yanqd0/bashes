@@ -17,6 +17,10 @@ common=(
     cloc
     # Count Lines of Code
     # See: https://github.com/AlDanial/cloc
+
+    tree
+    htop
+    p7zip
 )
 
 debs=(

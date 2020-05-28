@@ -38,6 +38,7 @@ function myextract {
             *.apk)       unzip "$1"       ;;
             *.Z)         uncompress "$1"  ;;
             *.7z)        7z x "$1"        ;;
+            *.iso)       7z x "$1"        ;;
             *)     echo "$1 cannot be extracted via myextract" ;;
         esac
     else
