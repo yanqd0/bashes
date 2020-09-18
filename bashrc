@@ -47,20 +47,19 @@ shopt -s extglob                    # Several extended pattern matching operator
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
 # PS1 {{{
-POWERLINE=$(python3 -c "
-from os.path import join
+POWERLINE_HOME=$(python3 -c "
 import pkg_resources
 
 try:
     dist = pkg_resources.get_distribution('powerline-status')
+    print(dist.location)
 except pkg_resources.DistributionNotFound:
     raise SystemExit(1)
-
-print(join(dist.location, 'powerline/bindings/bash/powerline.sh'))
 ")
-if [ -f "$POWERLINE" ]
+if [ -d "$POWERLINE_HOME" ]
 then
-    source "$POWERLINE"
+    source "$POWERLINE_HOME/powerline/bindings/bash/powerline.sh"
+    export POWERLINE_HOME
 else
     PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\] $(date -Iseconds)\n\$ '
 fi
