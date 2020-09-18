@@ -7,8 +7,6 @@ if [ -f ~/.bash/function.bash ]
 then
     . ~/.bash/function.bash
 fi
-
-check_source ~/.bash/alias.bash
 # }}}
 
 # export {{{
@@ -64,6 +62,8 @@ else
     PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\] $(date -Iseconds)\n\$ '
 fi
 # }}}
+
+check_source ~/.bash/alias.bash
 
 # Bash completion {{{
 if ! shopt -oq posix

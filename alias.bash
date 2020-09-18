@@ -54,6 +54,12 @@ alias vi='vim --noplugin'           # Set vi as vim
 alias freq='cut -f1 -d" " ~/.bash_history | sort | uniq -c | sort -nr | head -n 30'
 # }}}
 
+if [[ -n $POWERLINE_HOME ]]
+then
+    alias pdb='python3 -m powerline.bindings.pdb'
+fi
+
+
 
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=100 colorcolumn=100:
