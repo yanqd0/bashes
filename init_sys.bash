@@ -42,15 +42,15 @@ case ${name} in
     'Linux')
         if [ "$(id -u)" == "0" ]
         then # root
-            INSTALL="aptitude install"
+            INSTALL="apt-get install"
         else # Not root
-            INSTALL="sudo aptitude install"
+            INSTALL="sudo apt-get install"
         fi
 
-        packages=(${common[@]} ${debs[@]});;
+        packages=("${common[@]} ${debs[@]}");;
     'Darwin')
         INSTALL="brew install"
-        packages=(${common[@]} ${brews[@]});;
+        packages=("${common[@]} ${brews[@]}");;
     *)
         echo "Unsupported system: ${name}" 1>&2
         exit 1;;
@@ -59,3 +59,5 @@ echo "Initialize ${name}..."
 
 echo "$INSTALL" "${packages[@]}"
 $INSTALL "${packages[@]}"
+
+sudo pip3 install powerline-status psutil netifaces
