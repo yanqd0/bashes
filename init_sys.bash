@@ -18,6 +18,7 @@ common=(
     # Count Lines of Code
     # See: https://github.com/AlDanial/cloc
 
+    autojump
     tree
     htop
     p7zip
@@ -25,6 +26,7 @@ common=(
 
 debs=(
     build-essential
+    exuberant-ctags
 
     silversearcher-ag
     # A code-searching tool similar to ack, but faster.
@@ -47,10 +49,10 @@ case ${name} in
             INSTALL="sudo apt-get install"
         fi
 
-        packages=("${common[@]} ${debs[@]}");;
+        packages=("${common[@]}" "${debs[@]}");;
     'Darwin')
         INSTALL="brew install"
-        packages=("${common[@]} ${brews[@]}");;
+        packages=("${common[@]}" "${brews[@]}");;
     *)
         echo "Unsupported system: ${name}" 1>&2
         exit 1;;
