@@ -90,6 +90,10 @@ if [ -d ~/.yarn/bin ]
 then
     export PATH=$HOME/.yarn/bin:$PATH
 fi
+if [ -d "$HOME/.cargo/bin" ]
+then
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
 
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=100 colorcolumn=100:
