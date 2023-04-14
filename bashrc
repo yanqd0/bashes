@@ -47,7 +47,7 @@ shopt -s extglob                    # Several extended pattern matching operator
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
 # PS1 {{{
-POWERLINE_HOME=$(python3 -c "
+POWERLINE_HOME=$(/usr/bin/python3 -c "
 import pkg_resources
 
 try:
