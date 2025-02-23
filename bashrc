@@ -48,12 +48,12 @@ shopt -s extglob                    # Several extended pattern matching operator
 
 # PS1 {{{
 POWERLINE_HOME=$(/usr/bin/python3 -c "
-import pkg_resources
+from importlib import metadata
 
 try:
-    dist = pkg_resources.get_distribution('powerline-status')
-    print(dist.location)
-except pkg_resources.DistributionNotFound:
+    dist = metadata.distribution('powerline-status')
+    print(dist.locate_file(''))
+except metadata.PackageNotFoundError:
     raise SystemExit(1)
 ")
 if [ -d "$POWERLINE_HOME" ]
