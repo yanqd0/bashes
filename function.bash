@@ -13,91 +13,20 @@ function check_source {
 }
 # }}}
 
+# Source all function modules from function/ directory {{{
+_func_dir=$HOME/.bash/function
+if [ -d "$_func_dir" ]; then
+    for _f in "$_func_dir"/*.sh; do
+        [ -f "$_f" ] || continue
+        source "$_f"
+    done
+fi
+unset _func_dir _f
+# }}}
+
 # mcd: mkdir and cd into it {{{
 function mcd {
     mkdir -p "$1" && cd "$1" || exit
-}
-# }}}
-
-# myextract: Extract various condensed files {{{
-function myextract {
-    if [ -f "$1" ]
-    then
-        case "$1" in
-            *.tar.bz2)   tar xjf "$1"     ;;
-            *.tar.gz)    tar xzf "$1"     ;;
-            *.bz2)       bunzip2 "$1"     ;;
-            *.rar)       unrar e "$1"     ;;
-            *.gz)        gunzip "$1"      ;;
-            *.tar)       tar xf "$1"      ;;
-            *.tbz2)      tar xjf "$1"     ;;
-            *.tgz)       tar xzf "$1"     ;;
-            *.zip)       unzip "$1"       ;;
-            *.jar)       unzip "$1"       ;;
-            *.aar)       unzip "$1"       ;;
-            *.apk)       unzip "$1"       ;;
-            *.Z)         uncompress "$1"  ;;
-            *.7z)        7z x "$1"        ;;
-            *.iso)       7z x "$1"        ;;
-            *)     echo "$1 cannot be extracted via myextract" ;;
-        esac
-    else
-        echo "$1 is not a valid file"
-    fi
-}
-# }}}
-
-# tagsmgr0: Make and manage tags for Vim {{{
-function tagsmgr0 {
-    script=~/.bash/tags_manager.bash
-    if [ -f $script ]
-    then
-        $script "$*"
-    else
-        echo $script not found!
-    fi
-}
-# }}}
-
-# printcolor: Print the supported color of current bash emulator. {{{
-function printcolor {
-    script=~/.bash/print_color.bash
-    if [ -f $script ]
-    then
-        $script "$*"
-    else
-        echo $script not found!
-    fi
-}
-# }}}
-
-# cmd2sh: Save commands to a file {{{
-function cmd2sh {
-    if [[ -n $2 ]]
-    then
-        num=$2
-    else
-        num=1
-    fi
-
-    if [[ -n $1 ]]
-    then
-        file=$1.sh
-        if [[ -e $file ]]
-        then
-            echo "$file exists. Abort!"
-            return
-        fi
-
-        echo "#!/usr/bin/env bash" > "$file"
-        echo "" >> "$file"
-        fc -nl | tail -$num \
-            | sed "s/	 //g" \
-            | sed "s/  *$//g" >> "$file"
-        chmod +x "$file"
-    else
-        echo "Usage: cmd2sh <FILE_file> [<CMD_NUM>]"
-    fi
 }
 # }}}
 
@@ -110,56 +39,6 @@ function confal {
     else
         echo $script not found!
     fi
-}
-# }}}
-
-# ignore: Generate .gitignore file from gitignore.io API. {{{
-# See: https://www.gitignore.io/docs
-function gitignore {
-    curl -L -s "https://www.gitignore.io/api/$*"
-}
-# }}}
-
-# mkdatedir: Make a directory by date. {{{
-function mkdatedir {
-    dir=$(date +%Y)/$(date +%m)/$(date +%d)
-    mkdir -p "$dir"
-    if [[ -n $1 ]]
-    then
-        touch "$dir/$1"
-    fi
-}
-# }}}
-
-# init_sys: Initialize a Linux system. {{{
-function init_sys {
-    script=$HOME/.bash/init_sys.bash
-    if [ -f "$script" ]
-    then
-        $script "$*"
-    else
-        echo "$script not found!"
-    fi
-}
-# }}}
-
-# docker-clean: Clean docker containers, images and volumes. {{{
-function docker-clean {
-    docker rm $(docker ps -aq) 2> /dev/null
-    docker rmi $(docker images -qf "dangling=true") 2> /dev/null
-    # docker volume prune -f 2> /dev/null
-}
-# }}}
-
-# ctree: View a colorful tree with less {{{
-function ctree {
-    tree -C "$1" | less -R
-}
-# }}}
-
-# cless: A colorful less {{{
-function cless {
-    pygmentize "$1" | less -NR
 }
 # }}}
 
@@ -188,14 +67,43 @@ function myip {
 }
 # }}}
 
-# cless: A colorful less {{{
-function cmore {
-    if [[ $2 ]]
-    then
-        pygmentize "$1" | more "$2"
-    else
-        pygmentize "$1" | more
+# myfunc: Print all managed functions with descriptions {{{
+function myfunc {
+    declare -A desc
+    desc=(
+        [check_source]="检查文件是否存在并 source"
+        [mcd]="创建目录并进入"
+        [myextract]="解压各种压缩文件"
+        [tagsmgr0]="Vim 标签管理"
+        [printcolor]="打印终端支持的色彩"
+        [cmd2sh]="将历史命令保存为脚本"
+        [confal]="配置所有可配置命令"
+        [gitignore]="调用 gitignore.io API 生成模板"
+        [mkdatedir]="按日期创建目录"
+        [init_sys]="初始化 Linux 系统"
+        [docker-clean]="清理 Docker 容器和镜像"
+        [ctree]="彩色树状目录显示"
+        [cless]="彩色 less 分页器"
+        [myip]="查询本机公网 IP"
+        [cmore]="彩色 more 分页器"
+    )
+
+    local func_dir="$HOME/.bash/function"
+    local name f
+
+    echo "=== function/ modules ==="
+    if [ -d "$func_dir" ]; then
+        for f in "$func_dir"/*.sh; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f" .sh)
+            printf "  %-20s %s\n" "$name" "${desc[$name]:-}"
+        done | sort
     fi
+
+    echo "=== inline functions ==="
+    for name in check_source mcd confal myip; do
+        printf "  %-20s %s\n" "$name" "${desc[$name]:-}"
+    done
 }
 # }}}
 
