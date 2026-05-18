@@ -42,31 +42,6 @@ function confal {
 }
 # }}}
 
-# myip: Get public IP info from various services {{{
-function myip {
-    if [[ "$1" == "-h" || "$1" == "--help" ]]
-    then
-        echo "Usage: myip [N]" 1>&2
-        echo "  0  myip.ipip.net   (default, geo+ISP)" 1>&2
-        echo "  1  ipinfo.io       (JSON, rich detail)" 1>&2
-        echo "  2  icanhazip.com   (IP only, stable)" 1>&2
-        echo "  3  ifconfig.me     (IP only, classic)" 1>&2
-        echo "  4  ip.sb           (IP only, minimal)" 1>&2
-        echo "  5  cip.cc          (geo+ISP, fast)" 1>&2
-        return
-    fi
-
-    case "${1:-0}" in
-        1) curl ipinfo.io ;;
-        2) curl icanhazip.com ;;
-        3) curl ifconfig.me ;;
-        4) curl ip.sb ;;
-        5) curl cip.cc ;;
-        *) curl myip.ipip.net ;;
-    esac
-}
-# }}}
-
 # myfunc: Print all managed functions with descriptions {{{
 function myfunc {
     declare -A desc
@@ -86,6 +61,7 @@ function myfunc {
         [cless]="彩色 less 分页器"
         [myip]="查询本机公网 IP"
         [cmore]="彩色 more 分页器"
+        [yourip]="查询指定域名或IP的归属地"
     )
 
     local func_dir="$HOME/.bash/function"
@@ -101,7 +77,7 @@ function myfunc {
     fi
 
     echo "=== inline functions ==="
-    for name in check_source mcd confal myip; do
+    for name in check_source mcd confal; do
         printf "  %-20s %s\n" "$name" "${desc[$name]:-}"
     done
 }
