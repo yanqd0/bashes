@@ -1,5 +1,5 @@
 # cless: A colorful less {{{
-function cless {
+cless() {
     pygmentize "$1" | less -NR
 }
 # }}}

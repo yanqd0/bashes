@@ -1,5 +1,5 @@
 # cmd2sh: Save commands to a file {{{
-function cmd2sh {
+cmd2sh() {
     if [[ -n $2 ]]
     then
         num=$2

@@ -1,5 +1,5 @@
 # printcolor: Print the supported color of current bash emulator. {{{
-function printcolor {
+printcolor() {
     script=~/.bash/print_color.bash
     if [ -f $script ]
     then

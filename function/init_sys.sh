@@ -1,5 +1,5 @@
 # init_sys: Initialize a Linux system. {{{
-function init_sys {
+init_sys() {
     script=$HOME/.bash/init_sys.bash
     if [ -f "$script" ]
     then

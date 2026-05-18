@@ -1,5 +1,5 @@
 # myextract: Extract various condensed files {{{
-function myextract {
+myextract() {
     if [ -f "$1" ]
     then
         case "$1" in

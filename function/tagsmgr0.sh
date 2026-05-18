@@ -1,5 +1,5 @@
 # tagsmgr0: Make and manage tags for Vim {{{
-function tagsmgr0 {
+tagsmgr0() {
     script=~/.bash/tags_manager.bash
     if [ -f $script ]
     then

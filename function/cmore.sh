@@ -1,5 +1,5 @@
 # cmore: A colorful more {{{
-function cmore {
+cmore() {
     if [[ $2 ]]
     then
         pygmentize "$1" | more "$2"

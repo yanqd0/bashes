@@ -1,5 +1,5 @@
 # ctree: View a colorful tree with less {{{
-function ctree {
+ctree() {
     tree -C "$1" | less -R
 }
 # }}}
