@@ -24,18 +24,6 @@ fi
 unset _func_dir _f
 # }}}
 
-# confal: Configurate all configurable commands. {{{
-function confal {
-    script=~/.bash/config_all.bash
-    if [ -f $script ]
-    then
-        $script "$*"
-    else
-        echo $script not found!
-    fi
-}
-# }}}
-
 # myfunc: Print all managed functions with descriptions {{{
 function myfunc {
     declare -A desc
@@ -71,7 +59,7 @@ function myfunc {
     fi
 
     echo "=== inline functions ==="
-    for name in check_source mcd confal; do
+    for name in check_source; do
         printf "  %-20s %s\n" "$name" "${desc[$name]:-}"
     done
 }
