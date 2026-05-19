@@ -24,12 +24,6 @@ fi
 unset _func_dir _f
 # }}}
 
-# mcd: mkdir and cd into it {{{
-function mcd {
-    mkdir -p "$1" && cd "$1" || exit
-}
-# }}}
-
 # confal: Configurate all configurable commands. {{{
 function confal {
     script=~/.bash/config_all.bash
