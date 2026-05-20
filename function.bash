@@ -44,6 +44,7 @@ function myfunc {
         [myip]="查询本机公网 IP"
         [cmore]="彩色 more 分页器"
         [yourip]="查询指定域名或IP的归属地"
+        [cht]="cheat.sh 命令行速查表客户端"
     )
 
     local func_dir="$HOME/.bash/function"
