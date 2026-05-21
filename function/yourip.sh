@@ -10,10 +10,26 @@ yourip() {
     fi
 
     local target="$1"
-    case "${2:-0}" in
-        1) curl "ipinfo.io/$target" ;;
-        2) curl "ip-api.com/json/$target" ;;
-        *) curl "cip.cc/$target" ;;
+    local mode="${2:-0}"
+
+    # cip.cc and ipinfo.io need IP, not domain; resolve if needed
+    local ip="$target"
+    if [[ "$mode" != 2 && "$target" =~ [^0-9.] ]]; then
+        ip=$(dig +short "$target" 2>/dev/null | head -1)
+        if [[ -z "$ip" ]]; then
+            ip=$(getent hosts "$target" 2>/dev/null | awk '{print $1; exit}')
+        fi
+        if [[ -z "$ip" ]]; then
+            echo "ERROR: Cannot resolve $target" >&2
+            return 1
+        fi
+        echo "Resolved $target → $ip" >&2
+    fi
+
+    case "$mode" in
+        1) curl -sS "ipinfo.io/$ip" | jq '.' ;;
+        2) curl -sS "ip-api.com/json/$target" | jq '.' ;;
+        *) curl -sS "cip.cc/$ip" ;;
     esac
 }
 # }}}
