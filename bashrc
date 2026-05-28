@@ -12,7 +12,21 @@ check_source ~/.bash/alias.bash
 # }}}
 
 # export {{{
-export PATH=$HOME/.local/bin:$PATH
+# prepend_to_path: Prepend dir to PATH if it exists and not already there {{{
+_prepend_to_path() {
+    if [ -d "$1" ]; then
+        case ":$PATH:" in
+            *:"$1":*) ;;
+            *) export PATH="$1:$PATH" ;;
+        esac
+    fi
+}
+# }}}
+
+_prepend_to_path "$HOME/.yarn/bin"
+_prepend_to_path "$HOME/.cargo/bin"
+_prepend_to_path "$HOME/.local/bin"
+_prepend_to_path "$HOME/bin"
 
 # Golang {{{
 # export GOROOT=$HOME/.golang/go
@@ -85,15 +99,6 @@ fi
 
 check_source ~/.fzf.bash
 check_source /usr/share/autojump/autojump.bash
-
-if [ -d ~/.yarn/bin ]
-then
-    export PATH=$HOME/.yarn/bin:$PATH
-fi
-if [ -d "$HOME/.cargo/bin" ]
-then
-    export PATH="$HOME/.cargo/bin:$PATH"
-fi
 
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=100 colorcolumn=100:
