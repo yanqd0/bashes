@@ -14,6 +14,19 @@ fi
 # }}}
 " >> ~/.bashrc
             ;;
+        zsh)
+            echo "
+# vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
+# vim: set textwidth=80 colorcolumn=80:
+
+# Personal config {{{
+if [ -f ~/.bash/bashrc ]
+then
+    . ~/.bash/bashrc
+fi
+# }}}
+" >> ~/.zshrc
+            ;;
         git)
             git config --global core.editor vim
             git config --global push.default simple
@@ -42,6 +55,7 @@ fi
         "")
             echo 'A config name is needed:'
             echo '  bash'
+            echo '  zsh'
             echo '  git'
             ;;
         *)
