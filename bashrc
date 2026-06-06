@@ -2,6 +2,13 @@
 
 ### The local bashrc ###
 
+# Shell detection {{{
+_is_bash=false
+_is_zsh=false
+[ -n "$BASH_VERSION" ] && _is_bash=true
+[ -n "$ZSH_VERSION" ] && _is_zsh=true
+# }}}
+
 # Previous configs {{{
 if [ -f ~/.bash/function.bash ]
 then
@@ -37,7 +44,9 @@ _prepend_to_path "$HOME/bin"
 # export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 # }}}
 
-export HISTCONTROL=ignoredups:ignorespace
+if $_is_bash; then
+    export HISTCONTROL=ignoredups:ignorespace
+fi
 export HISTSIZE=1000
 export HISTFILESIZE=2000
 export TERM=xterm-256color
@@ -50,18 +59,27 @@ export LSCOLORS=gxfxaxdxcxegedabagacad
 # export GREP_COLOR='1;43'
 # }}}
 
-# shopt {{{
-shopt -s checkwinsize               # Check the window size and update if necessary,
-shopt -s histappend                 # Append to the history file
-shopt -s cdspell                    # Auto amend directory error
-shopt -s extglob                    # Several extended pattern matching operators are recognized
+# Shell options {{{
+if $_is_bash; then
+    shopt -s checkwinsize               # Check the window size and update if necessary,
+    shopt -s histappend                 # Append to the history file
+    shopt -s cdspell                    # Auto amend directory error
+    shopt -s extglob                    # Several extended pattern matching operators are recognized
+elif $_is_zsh; then
+    setopt append_history               # Append to the history file
+    setopt correct                      # Auto amend directory error
+    setopt extended_glob                # Several extended pattern matching operators are recognized
+    setopt hist_ignore_dups             # Don't record duplicate commands
+    setopt hist_ignore_space            # Don't record commands starting with space
+fi
 # }}}
 
 # make less more friendly for non-text input files, see lesspipe(1)
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
-# PS1 {{{
-POWERLINE_HOME=$(/usr/bin/python3 -c "
+# Prompt {{{
+if $_is_bash; then
+    POWERLINE_HOME=$(/usr/bin/python3 -c "
 from importlib import metadata
 
 try:
@@ -70,35 +88,46 @@ try:
 except metadata.PackageNotFoundError:
     raise SystemExit(1)
 ")
-if [ -d "$POWERLINE_HOME" ]
-then
-    source "$POWERLINE_HOME/powerline/bindings/bash/powerline.sh"
-    export POWERLINE_HOME
-    powerline-daemon -q
-    alias pdb='python3 -m powerline.bindings.pdb'
-else
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\] $(date -Iseconds)\n\$ '
-fi
-# }}}
-
-# Bash completion {{{
-if ! shopt -oq posix
-then
-    if [ -f /usr/share/bash-completion/bash_completion ]
+    if [ -d "$POWERLINE_HOME" ]
     then
-        . /usr/share/bash-completion/bash_completion
-    elif [ -f /etc/bash_completion ]
-    then
-        . /etc/bash_completion
+        source "$POWERLINE_HOME/powerline/bindings/bash/powerline.sh"
+        export POWERLINE_HOME
+        powerline-daemon -q
+        alias pdb='python3 -m powerline.bindings.pdb'
+    else
+        PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\] $(date -Iseconds)\n\$ '
     fi
 fi
 # }}}
 
-# make less more friendly for non-text input files, see lesspipe(1)
-[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+# Completion {{{
+if $_is_bash; then
+    if ! shopt -oq posix
+    then
+        if [ -f /usr/share/bash-completion/bash_completion ]
+        then
+            . /usr/share/bash-completion/bash_completion
+        elif [ -f /etc/bash_completion ]
+        then
+            . /etc/bash_completion
+        fi
+    fi
+elif $_is_zsh; then
+    autoload -Uz compinit && compinit
+fi
+# }}}
 
-check_source ~/.fzf.bash
-check_source /usr/share/autojump/autojump.bash
+# fzf & autojump {{{
+if $_is_bash; then
+    check_source ~/.fzf.bash
+fi
+
+if $_is_zsh; then
+    check_source /usr/share/autojump/autojump.zsh /usr/share/autojump/autojump.bash
+else
+    check_source /usr/share/autojump/autojump.bash
+fi
+# }}}
 
 # vim: set shiftwidth=4 softtabstop=-1 expandtab foldmethod=marker:
 # vim: set textwidth=100 colorcolumn=100:
