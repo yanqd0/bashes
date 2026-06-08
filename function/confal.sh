@@ -52,11 +52,17 @@ fi
             git config --global alias.l "log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
             git config --global alias.lg 'log --graph --full-history --all --color --pretty=format:"%x1b[31m%h%x09%x1b[32m%d%x1b[0m%x20%s"'
             ;;
+        rustup)
+            export RUSTUP_DIST_SERVER=https://mirrors.aliyun.com/rustup
+            export RUSTUP_UPDATE_ROOT=https://mirrors.aliyun.com/rustup/rustup
+            echo "Rustup mirrors set to Aliyun"
+            ;;
         "")
             echo 'A config name is needed:'
             echo '  bash'
             echo '  zsh'
             echo '  git'
+            echo '  rustup'
             ;;
         *)
             echo "$1 is not supported yet!"
