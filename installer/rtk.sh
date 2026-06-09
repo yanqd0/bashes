@@ -10,4 +10,8 @@ if command -v rtk &>/dev/null; then
     esac
 fi
 
-curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+if [[ $(uname) = 'Darwin' ]]; then
+    brew install rtk
+else
+    curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+fi
