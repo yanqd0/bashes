@@ -8,11 +8,11 @@ fi
 
 confal rustup
 
+curl --proto '=https' --tlsv1.2 -sSf https://mirrors.aliyun.com/repo/rust/rustup-init.sh | sh
+
 if [[ $(uname) = 'Darwin' ]]; then
-    brew install rustup
     _rustup_rc="$HOME/.zshrc"
 else
-    curl --proto '=https' --tlsv1.2 -sSf https://mirrors.aliyun.com/repo/rust/rustup-init.sh | sh
     _rustup_rc="$HOME/.bashrc"
 fi
 
