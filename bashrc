@@ -16,6 +16,7 @@ then
 fi
 
 check_source ~/.bash/alias.bash
+check_source ~/.bash/installer.sh
 # }}}
 
 # export {{{
