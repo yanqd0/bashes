@@ -6,7 +6,7 @@ if command -v rtk &>/dev/null; then
     read -r -p "是否强制重新安装？[y/N] " REPLY
     case "${REPLY:-N}" in
         [yY]|[yY][eE][sS]) ;;
-        *) echo "已取消。"; exit 0 ;;
+        *) echo "已取消。"; return 0 ;;
     esac
 fi
 
