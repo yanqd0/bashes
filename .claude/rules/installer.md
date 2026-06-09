@@ -10,6 +10,7 @@ paths:
 
 - 安装脚本放在 `installer/<name>.sh`，命名为小写命令名
 - 在 `installer.sh` 的 `desc` 关联数组中同步添加一行 `[<name>]="中文简介"`
+- `desc` 中的条目按名称字典序排列，不以添加时间为序
 - 脚本通过 `installer <name>` 调用，`installer.sh` 会 `source` 执行它
 
 ## 脚本编写

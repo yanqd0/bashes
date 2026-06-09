@@ -10,7 +10,7 @@ paths:
 
 - 新增函数放在 `function/<name>.sh`，一个文件只定义一个公开函数
 - 文件名与函数名一致
-- 在 `function.bash` 的 `myfunc` 函数中，向 `desc` 数组添加 `[<name>]="中文简介"`，维护在对应排序位置
+- 在 `function.bash` 的 `myfunc` 函数中，向 `desc` 数组添加 `[<name>]="中文简介"`，按名称字典序排列，不以添加时间为序
 - `function.bash` 启动时自动 glob `function/*.sh` 并逐一 source，新增文件无需额外注册即可被加载
 
 ## 函数编写
