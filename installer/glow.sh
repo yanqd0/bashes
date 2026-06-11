@@ -45,7 +45,7 @@ _glow_target="${_glow_os}_${_glow_arch}"
 _glow_repo="charmbracelet/glow"
 _glow_fallback_version="v2.1.2"
 _glow_install_dir="${GLOW_INSTALL_DIR:-$HOME/bin}"
-_glow_cache_dir="/tmp/glow-installer"
+_glow_cache_dir="$HOME/Downloads/installer/glow"
 mkdir -p "$_glow_cache_dir"
 
 _glow_archive="glow-${_glow_target}.tar.gz"

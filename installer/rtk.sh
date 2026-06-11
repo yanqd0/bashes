@@ -8,9 +8,9 @@
 #   RTK_VERSION=v0.42.3 installer rtk    # 指定版本安装（跳过版本检测）
 #
 # 缓存策略：
-#   /tmp/rtk-installer/.version               — 记录下载中/已完成的版本号
-#   /tmp/rtk-installer/rtk-<target>.tar.gz    — 下载中临时文件（中断后用于续传）
-#   /tmp/rtk-installer/<version>/...          — 下载完成后的归档，同版本可复用
+#   ~/Downloads/installer/rtk/.version               — 记录下载中/已完成的版本号
+#   ~/Downloads/installer/rtk/rtk-<target>.tar.gz    — 下载中临时文件（中断后用于续传）
+#   ~/Downloads/installer/rtk/<version>/...          — 下载完成后的归档，同版本可复用
 #
 # 参考：https://github.com/rtk-ai/rtk
 
@@ -53,7 +53,7 @@ esac
 _rtk_repo="rtk-ai/rtk"
 _rtk_fallback_version="v0.42.3"
 _rtk_install_dir="${RTK_INSTALL_DIR:-$HOME/bin}"
-_rtk_cache_dir="/tmp/rtk-installer"
+_rtk_cache_dir="$HOME/Downloads/installer/rtk"
 mkdir -p "$_rtk_cache_dir"
 
 _rtk_archive="rtk-${_rtk_target}.tar.gz"

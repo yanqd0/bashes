@@ -45,7 +45,7 @@ paths:
 ### 缓存目录结构
 
 ```
-/tmp/<name>-installer/
+~/Downloads/installer/<name>/
 ├── .version                          ← 记录版本号及文件名中缺失的关键信息
 ├── <name>-<target>.tar.gz            ← 下载中临时文件（用于续传）
 └── <version>/
@@ -55,7 +55,7 @@ paths:
 ### 下载
 
 - 使用 `wget -c --show-progress -O <缓存文件> <URL>`：`-c` 断点续传，`--show-progress` 显示进度条
-- 下载到 `/tmp/<name>-installer/` 固定路径（非 mktemp 临时目录），确保进程中断后文件保留
+- 下载到 `~/Downloads/installer/<name>/` 固定路径（非 mktemp 临时目录），确保进程中断后文件保留
 - 下载完成后 `mv` 到 `<version>/` 子目录归档
 
 ### 版本确定
@@ -68,7 +68,7 @@ paths:
 
 ### 续传判断
 
-- 启动时先于版本检测和已安装检查：若 `/tmp/<name>-installer/` 下存在临时文件且 `.version` 可读，直接进入续传模式
+- 启动时先于版本检测和已安装检查：若 `~/Downloads/installer/<name>/` 下存在临时文件且 `.version` 可读，直接进入续传模式
 - 续传模式下跳过已安装检查、版本查询、归档复用检查
 - `.version` 文件记录版本等文件名中无法体现的关键信息
 
