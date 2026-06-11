@@ -6,6 +6,7 @@ function installer {
 
     declare -A desc
     desc=(
+        [glow]="终端 Markdown 预览工具，Charmbracelet 出品"
         [rtk]="CLI 代理工具，减少 LLM token 消耗 60-90%"
         [rustup]="Rust 工具链管理器，使用阿里云镜像安装"
         [uv]="Python 包与项目管理器，由 Astral 团队开发，国内镜像安装"
