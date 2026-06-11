@@ -28,6 +28,7 @@ unset _func_dir _f
 function myfunc {
     declare -A desc
     desc=(
+        [check_compressed]="校验压缩文件完整性"
         [check_source]="检查文件是否存在并 source"
         [mcd]="创建目录并进入"
         [myextract]="解压各种压缩文件"

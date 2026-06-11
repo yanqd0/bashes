@@ -10,6 +10,15 @@
 #
 # 参考：https://github.com/charmbracelet/glow
 
+# _check_archive: 校验压缩包完整性，优先使用 check_compressed，不可用时回退 tar -tzf
+_check_archive() {
+    if declare -F check_compressed &>/dev/null; then
+        check_compressed "$1"
+    else
+        tar -tzf "$1" >/dev/null 2>&1
+    fi
+}
+
 # ---------------------------------------------------------------------------
 # 1. 检测操作系统与架构（无网络请求，始终先行）
 # ---------------------------------------------------------------------------
@@ -101,12 +110,13 @@ if ! $_glow_resuming; then
 
     _glow_tag="${_glow_version}"
 
-    # 3c. 归档复用检查：同版本已下载过则直接复用
+    # 3c. 归档复用检查：同版本已下载过且校验通过则直接复用
     _glow_archived="${_glow_cache_dir}/${_glow_version}/${_glow_archive}"
-    if [ -f "$_glow_archived" ]; then
+    if [ -f "$_glow_archived" ] && _check_archive "$_glow_archived"; then
         echo "复用已缓存的文件: ${_glow_archived}"
         _glow_use_archived=true
     else
+        [ -f "$_glow_archived" ] && echo "缓存文件已损坏，将重新下载: ${_glow_archived}"
         _glow_use_archived=false
         # 将版本号写入 .version，以便中断后能续传
         echo "$_glow_version" > "$_glow_version_file"
@@ -128,7 +138,10 @@ if $_glow_resuming || ! ${_glow_use_archived:-false}; then
     fi
 
     # wget -c: 断点续传；--show-progress: 强制显示进度条；-O: 写入指定文件
-    wget -c --show-progress -O "$_glow_downloading" "$_glow_download_url"
+    wget -c --show-progress -O "$_glow_downloading" "$_glow_download_url" || {
+        echo "[错误] 下载失败" >&2
+        return 1
+    }
 
     # 下载完成，归档到版本子目录
     _glow_archived="${_glow_cache_dir}/${_glow_version}/${_glow_archive}"
@@ -155,7 +168,7 @@ fi
 # 解压 & 安装
 echo "安装到 ${_glow_install_dir}/"
 mkdir -p "$_glow_install_dir"
-tar -xzf "$_glow_archived" -C "$_glow_tmpdir"
+tar -xzf "$_glow_archived" --strip-components=1 -C "$_glow_tmpdir"
 # 二进制文件名固定为 glow，-f 支持从旧版本覆盖升级
 mv -f "${_glow_tmpdir}/glow" "${_glow_install_dir}/glow"
 chmod +x "${_glow_install_dir}/glow"
@@ -164,8 +177,12 @@ chmod +x "${_glow_install_dir}/glow"
 # 6. 验证安装
 # ---------------------------------------------------------------------------
 echo ""
-echo "安装完成！"
-"${_glow_install_dir}/glow" --version 2>/dev/null || true
+if "${_glow_install_dir}/glow" --version 2>/dev/null; then
+    echo "安装完成！"
+else
+    echo "[错误] glow 安装后无法执行，请检查" >&2
+    return 1
+fi
 
 # PATH 提示
 if ! command -v glow &>/dev/null; then

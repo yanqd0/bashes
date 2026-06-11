@@ -14,6 +14,15 @@
 #
 # 参考：https://github.com/rtk-ai/rtk
 
+# _check_archive: 校验压缩包完整性，优先使用 check_compressed，不可用时回退 tar -tzf
+_check_archive() {
+    if declare -F check_compressed &>/dev/null; then
+        check_compressed "$1"
+    else
+        tar -tzf "$1" >/dev/null 2>&1
+    fi
+}
+
 # ---------------------------------------------------------------------------
 # 1. 检测操作系统与架构（无网络请求，始终先行）
 # ---------------------------------------------------------------------------
@@ -109,12 +118,13 @@ if ! $_rtk_resuming; then
 
     _rtk_tag="${_rtk_version}"
 
-    # 3c. 归档复用检查：同版本已下载过则直接复用，跳过下载
+    # 3c. 归档复用检查：同版本已下载过且校验通过则直接复用，跳过下载
     _rtk_archived="${_rtk_cache_dir}/${_rtk_version}/${_rtk_archive}"
-    if [ -f "$_rtk_archived" ]; then
+    if [ -f "$_rtk_archived" ] && _check_archive "$_rtk_archived"; then
         echo "复用已缓存的文件: ${_rtk_archived}"
         _rtk_use_archived=true
     else
+        [ -f "$_rtk_archived" ] && echo "缓存文件已损坏，将重新下载: ${_rtk_archived}"
         _rtk_use_archived=false
         # 将版本号写入 .version，以便中断后能续传
         echo "$_rtk_version" > "$_rtk_version_file"
@@ -134,7 +144,10 @@ if $_rtk_resuming || ! ${_rtk_use_archived:-false}; then
     fi
 
     # wget -c: 断点续传；--show-progress: 强制显示进度条；-O: 写入指定文件
-    wget -c --show-progress -O "$_rtk_downloading" "$_rtk_download_url"
+    wget -c --show-progress -O "$_rtk_downloading" "$_rtk_download_url" || {
+        echo "[错误] 下载失败" >&2
+        return 1
+    }
 
     # 下载完成，归档到版本子目录
     _rtk_archived="${_rtk_cache_dir}/${_rtk_version}/${_rtk_archive}"
@@ -170,8 +183,12 @@ chmod +x "${_rtk_install_dir}/rtk"
 # 6. 验证安装
 # ---------------------------------------------------------------------------
 echo ""
-echo "安装完成！"
-"${_rtk_install_dir}/rtk" --version
+if "${_rtk_install_dir}/rtk" --version; then
+    echo "安装完成！"
+else
+    echo "[错误] rtk 安装后无法执行，请检查" >&2
+    return 1
+fi
 
 # PATH 提示
 if ! command -v rtk &>/dev/null; then
