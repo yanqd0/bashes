@@ -17,6 +17,7 @@ fi
 
 check_source ~/.bash/alias.bash
 check_source ~/.bash/installer.sh
+check_source ~/.bash/confal.sh
 # }}}
 
 # export {{{
