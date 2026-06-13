@@ -92,6 +92,29 @@ paths:
 - `chmod +x` 确保可执行
 - 安装后调用 `--version` 验证，若安装路径不在 `PATH` 中则打印提示
 
+## deb 包安装流程
+
+下载 deb 包的脚本（如 `warp.sh`）遵循与上述 tar.gz 相同的下载策略（缓存目录、续传、归档复用），但安装阶段不同：
+
+### 下载
+
+- 下载 URL 使用 `https://app.warp.dev/download?package=deb&arch=<arch>` 形式
+- `_warp_arch` 使用 Debian 命名（`amd64`、`arm64`）
+- 版本从 `--max-redirect=0 --server-response` 的 `Location` 响应头中提取
+
+### 已安装检查
+
+- deb 安装后的命令名可能与包名不同（如 `warp-terminal`），以实际命令为准
+
+### 归档校验
+
+- 使用 `dpkg-deb --info <file>.deb` 校验 deb 包完整性（替代 tar -tzf）
+
+### 安装
+
+- 使用 `sudo dpkg -i <file>.deb` 安装，失败时通过 `sudo apt install -f -y` 自动修复依赖
+- deb 包通常会注册系统仓库（如 Warp 的 APT 仓库），后续可通过 `apt upgrade` 更新
+
 ### 变量命名
 
 - 脚本内局部变量统一以 `_<name>_` 为前缀（如 `_rtk_os`、`_rtk_version`）
