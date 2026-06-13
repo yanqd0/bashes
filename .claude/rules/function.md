@@ -6,6 +6,8 @@ paths:
 
 # 函数模块规则
 
+**function 是默认推荐位置。** 不属于安装（installer）和配置（confal）的新功能默认放这里。提供可复用的通用 shell 函数，一个文件一个公开函数，由 `function.bash` 自动加载。
+
 ## 文件组织
 
 - 新增函数放在 `function/<name>.sh`，一个文件只定义一个公开函数
