@@ -41,3 +41,12 @@ fi
 - 用 `check_source` 安全 source 可选文件（定义在 `function.bash`）
 - PATH 追加用 `_prepend_to_path`（定义在 `bashrc`）
 - 提交信息使用中文，格式为 `标题\n\n详细描述`
+
+## Installer 约定
+
+- 优先使用上游预编译二进制，安装到 `~/bin/`
+- **全部二进制都安装**：压缩包内除 LICENSE、`.a`、`.so`、`.dylib` 外，所有文件均安装
+- macOS 预编译不可用时 fallback 到 `brew install`，Linux 预编译不可用时打印源码编译指引
+- 支持断点续传：`~/Downloads/installer/<name>/` 下缓存归档，`.version` 记录版本号
+- 解压前做 CWE-22 安全检查（拒绝含 `/` 开头或 `..` 路径穿越的压缩包）
+- 安装后用 `<主二进制> --version` 验证可用性
