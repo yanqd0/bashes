@@ -8,6 +8,7 @@ function installer {
     desc=(
         [bat]="cat 的现代化替代，支持语法高亮与 Git 标记"
         [brew]="macOS / Linux 包管理器，使用阿里云镜像安装"
+        [delta]="git diff 美化工具，支持语法高亮与并排对比"
         [fd]="find 的现代化替代，语法简洁搜索极快"
         [glow]="终端 Markdown 预览工具"
         [hexyl]="十六进制查看器，语法着色，比 xxd/od 更直观"
