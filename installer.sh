@@ -6,6 +6,7 @@ function installer {
 
     declare -A desc
     desc=(
+        [bat]="cat 的现代化替代，支持语法高亮与 Git 标记"
         [brew]="macOS / Linux 包管理器，使用阿里云镜像安装"
         [glow]="终端 Markdown 预览工具"
         [hugo]="Go 语言静态网站生成器，构建速度极快"

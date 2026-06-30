@@ -83,6 +83,25 @@ _i_detect_arch() {
 }
 
 # ---------------------------------------------------------------------------
+# _i_rust_target
+# 将当前系统映射为 Rust 目标三元组，结果存入 _I_TARGET
+# 例如 x86_64-unknown-linux-gnu、aarch64-apple-darwin 等
+# ---------------------------------------------------------------------------
+_i_rust_target() {
+    case "$(uname -s)-$(uname -m)" in
+    Linux-x86_64) _I_TARGET="x86_64-unknown-linux-gnu" ;;
+    Linux-aarch64) _I_TARGET="aarch64-unknown-linux-gnu" ;;
+    Linux-arm*) _I_TARGET="arm-unknown-linux-gnueabihf" ;;
+    Darwin-x86_64) _I_TARGET="x86_64-apple-darwin" ;;
+    Darwin-arm64) _I_TARGET="aarch64-apple-darwin" ;;
+    *)
+        echo "[错误] 不支持的 Rust 目标平台: $(uname -s)-$(uname -m)" >&2
+        return 1
+        ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
 # _i_setup <tool_name> <repo> <fallback_version> [version_env_var]
 # 初始化基本配置：名称、仓库、回退版本、安装/缓存目录
 # ---------------------------------------------------------------------------
@@ -261,7 +280,6 @@ _i_extract() {
     fi
 
     _I_TMPDIR=$(mktemp -d)
-    trap 'rm -rf "$_I_TMPDIR"' RETURN
 
     echo "解压..."
     mkdir -p "$_I_INSTALL_DIR"
@@ -377,6 +395,7 @@ _i_path_warning() {
 # 清理所有 _I_ 前缀的全局变量
 # ---------------------------------------------------------------------------
 _i_cleanup() {
+    [ -n "${_I_TMPDIR:-}" ] && rm -rf "$_I_TMPDIR"
     unset _I_NAME _I_REPO _I_FALLBACK _I_VERSION_ENV
     unset _I_VERSION _I_TAG _I_OS _I_ARCH _I_TARGET
     unset _I_INSTALL_DIR _I_CACHE_DIR _I_ARCHIVED _I_TMPDIR
