@@ -13,6 +13,7 @@ function installer {
         [eza]="ls 的现代化替代，支持图标与 Git 状态"
         [fd]="find 的现代化替代，语法简洁搜索极快"
         [glow]="终端 Markdown 预览工具"
+        [helm]="Kubernetes 包管理器，通过 get.helm.sh CDN 安装"
         [hexyl]="十六进制查看器，语法着色，比 xxd/od 更直观"
         [hugo]="Go 语言静态网站生成器，构建速度极快"
         [hyperfine]="命令行基准测试工具，精确统计执行时间"
@@ -23,6 +24,7 @@ function installer {
         [rustup]="Rust 工具链管理器（使用阿里云镜像安装）"
         [uv]="Python 包与项目管理器（国内镜像安装）"
         [warp]="现代终端仿真器，支持 AI 辅助"
+        [yazi]="终端文件管理器，支持预览与多面板"
         [zoxide]="智能 cd 替代，根据访问频率自动跳转"
     )
 
