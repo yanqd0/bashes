@@ -8,6 +8,7 @@ function installer {
     desc=(
         [bat]="cat 的现代化替代，支持语法高亮与 Git 标记"
         [brew]="macOS / Linux 包管理器，使用阿里云镜像安装"
+        [fd]="find 的现代化替代，语法简洁搜索极快"
         [glow]="终端 Markdown 预览工具"
         [hugo]="Go 语言静态网站生成器，构建速度极快"
         [kubectl]="Kubernetes 集群管理命令行工具"
