@@ -16,6 +16,7 @@ function installer {
         [hexyl]="十六进制查看器，语法着色，比 xxd/od 更直观"
         [hugo]="Go 语言静态网站生成器，构建速度极快"
         [hyperfine]="命令行基准测试工具，精确统计执行时间"
+        [k9s]="Kubernetes 终端管理面板，实时监控集群资源"
         [kubectl]="Kubernetes 集群管理命令行工具"
         [llama.cpp]="高性能 LLM 推理引擎，支持 CPU/GPU 混合推理"
         [rtk]="CLI 代理工具，减少 LLM token 消耗 60-90%"
