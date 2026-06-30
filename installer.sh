@@ -9,6 +9,8 @@ function installer {
         [bat]="cat 的现代化替代，支持语法高亮与 Git 标记"
         [brew]="macOS / Linux 包管理器，使用阿里云镜像安装"
         [delta]="git diff 美化工具，支持语法高亮与并排对比"
+        [difftastic]="语义化 diff 工具，理解代码结构而非逐行对比"
+        [eza]="ls 的现代化替代，支持图标与 Git 状态"
         [fd]="find 的现代化替代，语法简洁搜索极快"
         [glow]="终端 Markdown 预览工具"
         [hexyl]="十六进制查看器，语法着色，比 xxd/od 更直观"
@@ -20,6 +22,7 @@ function installer {
         [rustup]="Rust 工具链管理器（使用阿里云镜像安装）"
         [uv]="Python 包与项目管理器（国内镜像安装）"
         [warp]="现代终端仿真器，支持 AI 辅助"
+        [zoxide]="智能 cd 替代，根据访问频率自动跳转"
     )
 
     if [ $# -eq 0 ]; then
