@@ -23,6 +23,8 @@ function installer {
         for f in "$installer_dir"/*.sh; do
             [ -f "$f" ] || continue
             name=$(basename "$f" .sh)
+            # 跳过 _ 开头的内部文件
+            case "$name" in _*) continue ;; esac
             printf "  %-16s %s\n" "$name" "${desc[$name]:-}"
         done
         return 0
