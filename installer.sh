@@ -22,6 +22,7 @@ function installer {
         [llama.cpp]="高性能 LLM 推理引擎，支持 CPU/GPU 混合推理"
         [rtk]="CLI 代理工具，减少 LLM token 消耗 60-90%"
         [rustup]="Rust 工具链管理器（使用阿里云镜像安装）"
+        [stylua]="Lua 代码格式化工具，Rust 预编译"
         [uv]="Python 包与项目管理器（国内镜像安装）"
         [warp]="现代终端仿真器，支持 AI 辅助"
         [yazi]="终端文件管理器，支持预览与多面板"
