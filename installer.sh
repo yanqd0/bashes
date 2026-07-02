@@ -24,6 +24,7 @@ function installer {
         [rustup]="Rust 工具链管理器（使用阿里云镜像安装）"
         [stylua]="Lua 代码格式化工具，Rust 预编译"
         [uv]="Python 包与项目管理器（国内镜像安装）"
+        [v2rayN]="V2Ray/Xray 代理客户端，跨平台 GUI"
         [warp]="现代终端仿真器，支持 AI 辅助"
         [yazi]="终端文件管理器，支持预览与多面板"
         [zoxide]="智能 cd 替代，根据访问频率自动跳转"
