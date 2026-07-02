@@ -30,20 +30,52 @@ _i_detect_version
 _helm_url="https://get.helm.sh/helm-${_I_VERSION}-${_I_OS}-${_I_ARCH}.tar.gz"
 _helm_archive="helm-${_I_OS}-${_I_ARCH}.tar.gz"
 _helm_downloading="${_I_CACHE_DIR}/${_helm_archive}"
+_helm_version_file="${_I_CACHE_DIR}/.version"
 _helm_archived="${_I_CACHE_DIR}/${_I_VERSION}/${_helm_archive}"
 
-if [ -f "$_helm_archived" ]; then
-    echo "复用已缓存的文件: ${_helm_archived}"
+# 续传检测：若临时文件与 .version 均存在，则进入续传模式
+_helm_resuming=false
+if [ -f "$_helm_downloading" ] && [ -f "$_helm_version_file" ]; then
+    _helm_resuming=true
+    echo "发现未完成的下载，将续传..."
+    echo "  文件: ${_helm_downloading}"
+    echo "  已下载: $(du -h "$_helm_downloading" | cut -f1)"
+fi
+
+if ! $_helm_resuming; then
+    if [ -f "$_helm_archived" ] && _i_check_archive "$_helm_archived"; then
+        echo "复用已缓存的文件: ${_helm_archived}"
+    else
+        [ -f "$_helm_archived" ] && echo "缓存文件已损坏，将重新下载"
+        echo "$_I_VERSION" >"$_helm_version_file"
+    fi
+fi
+
+# 仅在未复用归档时执行下载
+if ! $_helm_resuming && [ -f "$_helm_archived" ] && _i_check_archive "$_helm_archived" 2>/dev/null; then
+    : # 已复用归档，跳过下载
 else
-    echo "下载: ${_helm_url}"
-    wget --show-progress -O "$_helm_downloading" "$_helm_url" || {
+    if $_helm_resuming; then
+        echo "继续下载: ${_helm_url}"
+    else
+        echo "下载: ${_helm_url}"
+    fi
+    wget -c --show-progress -O "$_helm_downloading" "$_helm_url" || {
         echo "[错误] 下载失败" >&2
         rm -f "$_helm_downloading"
         return 1
     }
+    _helm_archived="${_I_CACHE_DIR}/${_I_VERSION}/${_helm_archive}"
     mkdir -p "$(dirname "$_helm_archived")"
     mv "$_helm_downloading" "$_helm_archived"
     echo "已归档: ${_helm_archived}"
+fi
+
+# CWE-22 安全检查：拒绝含绝对路径或路径穿越的压缩包
+echo "校验压缩包安全性..."
+if tar -tzf "$_helm_archived" 2>/dev/null | grep -qE '^/|(^|/)\.\.(/|$)'; then
+    echo "[错误] 压缩包包含不安全的路径，拒绝解压" >&2
+    return 1
 fi
 
 # 解压
@@ -73,4 +105,4 @@ fi
 
 _i_path_warning "helm"
 _i_cleanup
-unset _helm_url _helm_archive _helm_downloading _helm_archived _helm_tmpdir
+unset _helm_url _helm_archive _helm_downloading _helm_version_file _helm_resuming _helm_archived _helm_tmpdir
