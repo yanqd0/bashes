@@ -25,8 +25,9 @@ paths:
 ## 系统兼容
 
 - macOS（`uname = Darwin`）与 Linux 可能走不同安装方式
-- brew 安装后环境变量写 `~/.zshrc`，curl 等安装后写 `~/.bashrc`
+- 环境变量写入 shell 配置文件时，优先检测当前运行的 shell（`$ZSH_VERSION` → `~/.zshrc`，`$BASH_VERSION` → `~/.bashrc`），无法检测时按 OS 惯例兜底
 - 写入前 `grep -q` 检查避免重复
+- Homebrew 自身的环境变量在 macOS 上写 `~/.zprofile`（登录 shell 惯例），Linux 上写 `~/.bashrc`
 
 ## 通用安装策略
 
