@@ -37,7 +37,7 @@
 # _I_INSTALL_DIR  - 安装目标目录（默认 ~/bin）
 # _I_CACHE_DIR    - 下载缓存目录
 # _I_ARCHIVED     - 归档文件完整路径（_i_github_download 设置）
-# _I_TMPDIR       - 解压临时目录（_i_extract 设置，trap RETURN 自动清理）
+# _I_TMPDIR       - 解压临时目录（_i_extract 设置，_i_cleanup 负责清理）
 # ============================================================================
 
 # ---------------------------------------------------------------------------
@@ -283,7 +283,11 @@ _i_extract() {
 
     echo "解压..."
     mkdir -p "$_I_INSTALL_DIR"
-    tar -xzf "$_I_ARCHIVED" --strip-components="$strip" -C "$_I_TMPDIR"
+    tar -xzf "$_I_ARCHIVED" --strip-components="$strip" -C "$_I_TMPDIR" || {
+        echo "[错误] 解压失败" >&2
+        rm -rf "$_I_TMPDIR"
+        return 1
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -369,7 +373,7 @@ _i_verify() {
             local name
             name=$(basename "$f")
             case "$name" in
-            LICENSE | README* | *.md) continue ;;
+            LICENSE | README* | *.md | *.a | *.dylib | *.so | *.so.*) continue ;;
             esac
             rm -f "${_I_INSTALL_DIR}/${name}"
         done
