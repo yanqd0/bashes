@@ -10,14 +10,20 @@ confal rustup
 
 curl --proto '=https' --tlsv1.2 -sSf https://mirrors.aliyun.com/repo/rust/rustup-init.sh | sh
 
-if [[ $(uname) = 'Darwin' ]]; then
+# 根据实际运行的 shell 选择配置文件（而非根据 OS 猜测）
+if [ -n "$ZSH_VERSION" ]; then
+    _rustup_rc="$HOME/.zshrc"
+elif [ -n "$BASH_VERSION" ]; then
+    _rustup_rc="$HOME/.bashrc"
+elif [ "$(uname -s)" = "Darwin" ]; then
+    # 无法检测 shell 时按 OS 惯例兜底
     _rustup_rc="$HOME/.zshrc"
 else
     _rustup_rc="$HOME/.bashrc"
 fi
 
 if ! grep -q 'RUSTUP_DIST_SERVER' "$_rustup_rc" 2>/dev/null; then
-    cat >> "$_rustup_rc" <<'EOF'
+    cat >>"$_rustup_rc" <<'EOF'
 
 # Rustup Aliyun mirror {{{
 export RUSTUP_DIST_SERVER="https://mirrors.aliyun.com/rustup"
