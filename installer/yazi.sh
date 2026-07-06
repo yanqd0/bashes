@@ -90,6 +90,11 @@ done
 
 rm -rf "$_tmpdir"
 
+# 为已安装的二进制创建软链接
+for _bin in yazi ya; do
+    [ -f "${_I_INSTALL_DIR}/${_bin}" ] && _i_symlink_install "$_bin"
+done
+
 echo "共安装 ${_count} 个二进制文件"
 [ "$_count" -gt 0 ] || {
     echo "[错误] 未找到可安装的二进制文件" >&2

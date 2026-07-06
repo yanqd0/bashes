@@ -94,6 +94,7 @@ cp -f "${_helm_tmpdir}/helm" "${_I_INSTALL_DIR}/helm"
 chmod +x "${_I_INSTALL_DIR}/helm"
 rm -rf "$_helm_tmpdir"
 echo "  helm"
+_i_symlink_install "helm"
 
 echo ""
 if "${_I_INSTALL_DIR}/helm" version 2>/dev/null; then

@@ -91,6 +91,7 @@ chmod +x "${_I_INSTALL_DIR}/stylua"
 echo "  stylua"
 
 rm -rf "$_tmpdir"
+_i_symlink_install "stylua"
 
 # ---------------------------------------------------------------------------
 # 6. 验证安装

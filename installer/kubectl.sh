@@ -87,6 +87,7 @@ else
 fi
 
 _kubectl_tag="${_kubectl_version}"
+_kubectl_backing_dir="${_kubectl_install_dir}/installer/kubectl/${_kubectl_version}"
 
 # 3c. 缓存复用检查：同版本已下载过则直接复用
 _kubectl_archived="${_kubectl_cache_dir}/${_kubectl_version}/kubectl"
@@ -123,20 +124,25 @@ fi
 # ---------------------------------------------------------------------------
 # 5. 安装到 ~/bin/
 # ---------------------------------------------------------------------------
-echo "安装到 ${_kubectl_install_dir}/"
-mkdir -p "$_kubectl_install_dir"
-cp -f "$_kubectl_archived" "${_kubectl_install_dir}/kubectl"
-chmod +x "${_kubectl_install_dir}/kubectl"
+echo "安装到 ${_kubectl_backing_dir}/"
+mkdir -p "$_kubectl_backing_dir"
+cp -f "$_kubectl_archived" "${_kubectl_backing_dir}/kubectl"
+chmod +x "${_kubectl_backing_dir}/kubectl"
+# 创建软链接到用户 bin 目录
+ln -sf "${_kubectl_backing_dir}/kubectl" "${_kubectl_install_dir}/kubectl"
+echo "  ${_kubectl_install_dir}/kubectl -> ${_kubectl_backing_dir}/kubectl"
 
 # ---------------------------------------------------------------------------
 # 6. 验证安装
 # ---------------------------------------------------------------------------
 echo ""
-if "${_kubectl_install_dir}/kubectl" version --client 2>/dev/null; then
+if "${_kubectl_backing_dir}/kubectl" version --client 2>/dev/null; then
     echo "kubectl 安装完成！"
 else
     echo "预编译二进制不可用，清理已安装文件..."
+    rm -f "${_kubectl_backing_dir}/kubectl"
     rm -f "${_kubectl_install_dir}/kubectl"
+    rmdir "$_kubectl_backing_dir" 2>/dev/null || true
 
     if [ "$_kubectl_os" = "darwin" ]; then
         echo "macOS 可通过 Homebrew 安装："
@@ -161,6 +167,6 @@ fi
 
 # 清理临时变量
 unset _kubectl_os _kubectl_arch _kubectl_target _kubectl_version _kubectl_tag
-unset _kubectl_install_dir _kubectl_cache_dir _kubectl_latest
+unset _kubectl_install_dir _kubectl_backing_dir _kubectl_cache_dir _kubectl_latest
 unset _kubectl_download_url _kubectl_archived _kubectl_use_archived _kubectl_tmp
 unset _kubectl_fallback_version

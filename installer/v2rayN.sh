@@ -24,8 +24,6 @@ _i_detect_arch "64" "arm64" || return 1
 # ---------------------------------------------------------------------------
 _i_setup "v2rayN" "2dust/v2rayN" "7.22.7" "V2RAYN_VERSION"
 [ -n "${V2RAYN_INSTALL_DIR:-}" ] && _i_set_install_dir "$V2RAYN_INSTALL_DIR"
-# 默认为 ~/bin/v2rayN.app/，避免与软链接同名
-_I_INSTALL_DIR="${_I_INSTALL_DIR}/v2rayN.app"
 [ -n "${V2RAYN_VERSION:-}" ] && _I_VERSION="$V2RAYN_VERSION"
 
 # ---------------------------------------------------------------------------
@@ -47,6 +45,8 @@ fi
 # 4. 版本检测
 # ---------------------------------------------------------------------------
 _i_detect_version
+# v2rayN 是多文件 GUI 应用，安装到版本化目录下的 .app 子目录
+_I_INSTALL_DIR="${_I_INSTALL_DIR}/v2rayN.app"
 
 # ---------------------------------------------------------------------------
 # 5. 下载（v2rayN 使用 .zip 格式，~130MB）
@@ -118,11 +118,7 @@ rm -rf "$_tmpdir"
 echo "共安装 ${_count} 项"
 
 # 创建 ~/bin/v2rayN 软链接指向主程序
-ln -sf "${_I_INSTALL_DIR}/v2rayN" "${HOME}/bin/v2rayN" 2>/dev/null || {
-    rm -f "${HOME}/bin/v2rayN"
-    ln -sf "${_I_INSTALL_DIR}/v2rayN" "${HOME}/bin/v2rayN"
-}
-echo "  ~/bin/v2rayN -> ${_I_INSTALL_DIR}/v2rayN"
+_i_symlink_install "v2rayN"
 
 # 验证安装
 # ---------------------------------------------------------------------------
