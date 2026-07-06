@@ -34,7 +34,10 @@
 # _I_TAG          - Release tag（通常与 _I_VERSION 相同）
 # _I_OS           - 映射后的操作系统名（_i_detect_os 设置）
 # _I_ARCH         - 映射后的 CPU 架构名（_i_detect_arch 设置）
-# _I_INSTALL_DIR  - 安装目标目录（默认 ~/bin）
+# _I_SYMLINK_DIR  - 软链接目录（默认 ~/bin，加入 PATH）
+# _I_BACKING_DIR  - 按工具名的版本化存储根（$_I_SYMLINK_DIR/installer/$_I_NAME）
+# _I_INSTALL_DIR  - 版本化安装目录（$_I_BACKING_DIR/$_I_VERSION，版本未知前为 $_I_BACKING_DIR）
+# _I_SYMLINK_MODE - 软链接模式："auto"(默认) 或 "none"(用户自定义目录时退化为旧行为)
 # _I_CACHE_DIR    - 下载缓存目录
 # _I_ARCHIVED     - 归档文件完整路径（_i_github_download 设置）
 # _I_TMPDIR       - 解压临时目录（_i_extract 设置，_i_cleanup 负责清理）
@@ -111,16 +114,23 @@ _i_setup() {
     _I_FALLBACK="$3"
     _I_VERSION_ENV="${4:-}"
 
-    _I_INSTALL_DIR="${HOME}/bin"
+    _I_SYMLINK_DIR="${HOME}/bin"
+    _I_SYMLINK_MODE="auto"
+    _I_BACKING_DIR="${_I_SYMLINK_DIR}/installer/${_I_NAME}"
+    _I_INSTALL_DIR="${_I_BACKING_DIR}" # 版本确定后重算为 $_I_BACKING_DIR/$_I_VERSION
     _I_CACHE_DIR="$HOME/Downloads/installer/${_I_NAME}"
     mkdir -p "$_I_CACHE_DIR"
 }
 
 # ---------------------------------------------------------------------------
 # _i_set_install_dir <dir>
-# 覆盖默认安装目录（需在 _i_setup 之前或之后调用）
+# 覆盖默认安装目录（需在 _i_setup 之后调用）
+# 用户自定义目录时禁用版本化存储，退化为扁平安装（旧行为）
 # ---------------------------------------------------------------------------
 _i_set_install_dir() {
+    _I_SYMLINK_DIR="$1"
+    _I_SYMLINK_MODE="none"
+    _I_BACKING_DIR="$1"
     _I_INSTALL_DIR="$1"
 }
 
@@ -159,6 +169,7 @@ _i_detect_version() {
     if [ -n "${_I_VERSION:-}" ]; then
         echo "使用指定版本: ${_I_VERSION}"
         _I_TAG="${_I_VERSION}"
+        _I_INSTALL_DIR="${_I_BACKING_DIR}/${_I_VERSION}"
         return 0
     fi
 
@@ -180,6 +191,7 @@ _i_detect_version() {
     fi
 
     _I_TAG="${_I_VERSION}"
+    _I_INSTALL_DIR="${_I_BACKING_DIR}/${_I_VERSION}"
 }
 
 # ---------------------------------------------------------------------------
@@ -209,6 +221,7 @@ _i_github_download() {
         resuming=true
         _I_VERSION=$(cat "$version_file")
         _I_TAG="${_I_VERSION}"
+        _I_INSTALL_DIR="${_I_BACKING_DIR}/${_I_VERSION}"
         echo "发现未完成的下载（版本 ${_I_VERSION}），将续传..."
         echo "  文件: ${downloading}"
         echo "  已下载: $(du -h "$downloading" | cut -f1)"
@@ -267,7 +280,7 @@ _i_github_download() {
 # ---------------------------------------------------------------------------
 # _i_extract [strip_components]
 # 解压压缩包到临时目录，自动做 CWE-22 安全检查
-# 结果存入 _I_TMPDIR，trap RETURN 自动清理
+# 结果存入 _I_TMPDIR（_i_cleanup 负责清理）
 # ---------------------------------------------------------------------------
 _i_extract() {
     local strip="${1:-0}"
@@ -304,9 +317,12 @@ _i_install_one() {
     fi
 
     echo "安装 ${name} 到 ${_I_INSTALL_DIR}/"
+    mkdir -p "$_I_INSTALL_DIR"
     cp -f "$src" "${_I_INSTALL_DIR}/"
     chmod +x "${_I_INSTALL_DIR}/${name}"
     echo "  ${name}"
+
+    _i_symlink_install "$name"
 }
 
 # ---------------------------------------------------------------------------
@@ -317,8 +333,10 @@ _i_install_one() {
 # ---------------------------------------------------------------------------
 _i_install_all() {
     local count=0
+    local _names=""
 
     echo "安装到 ${_I_INSTALL_DIR}/"
+    mkdir -p "$_I_INSTALL_DIR"
     for f in "$_I_TMPDIR"/*; do
         [ -f "$f" ] || continue
         local name
@@ -344,7 +362,13 @@ _i_install_all() {
         cp -f "$f" "${_I_INSTALL_DIR}/"
         chmod +x "${_I_INSTALL_DIR}/${name}"
         echo "  ${name}"
+        _names="${_names} ${name}"
         count=$((count + 1))
+    done
+
+    # 为每个已安装的二进制创建软链接
+    for name in $_names; do
+        [ -n "$name" ] && _i_symlink_install "$name"
     done
 
     echo "共安装 ${count} 个二进制文件"
@@ -352,9 +376,31 @@ _i_install_all() {
 }
 
 # ---------------------------------------------------------------------------
+# _i_symlink_install <binary_name>
+# 创建软链接：_I_SYMLINK_DIR/<name> → _I_INSTALL_DIR/<name>
+# 若 _I_SYMLINK_MODE 为 "none"（用户自定义安装目录），则跳过
+# ---------------------------------------------------------------------------
+_i_symlink_install() {
+    [ "${_I_SYMLINK_MODE}" = "none" ] && return 0
+
+    local name="$1"
+    local link_path="${_I_SYMLINK_DIR}/${name}"
+    local target_path="${_I_INSTALL_DIR}/${name}"
+
+    # 清理旧文件或链接（支持原地替换）
+    if [ -e "$link_path" ] || [ -L "$link_path" ]; then
+        rm -f "$link_path"
+    fi
+
+    mkdir -p "$_I_SYMLINK_DIR"
+    ln -sf "$target_path" "$link_path"
+    echo "  ${link_path} -> ${target_path}"
+}
+
+# ---------------------------------------------------------------------------
 # _i_verify <binary_path> [test_args]
 # 验证安装的二进制是否可用
-# 成功返回 0，失败时自动清理 _I_TMPDIR 中对应的已安装文件
+# 成功返回 0，失败时自动清理 _I_TMPDIR 中对应的已安装文件及软链接
 # ---------------------------------------------------------------------------
 _i_verify() {
     local bin_path="$1"
@@ -367,7 +413,7 @@ _i_verify() {
     else
         echo "预编译二进制不可用，清理已安装文件..."
 
-        # 清理：遍历 _I_TMPDIR 中的文件，从安装目录删除对应文件
+        # 清理：遍历 _I_TMPDIR 中的文件，从安装目录和链接目录删除对应文件
         for f in "$_I_TMPDIR"/*; do
             [ -f "$f" ] || continue
             local name
@@ -376,7 +422,11 @@ _i_verify() {
             LICENSE | README* | *.md | *.a | *.dylib | *.so | *.so.*) continue ;;
             esac
             rm -f "${_I_INSTALL_DIR}/${name}"
+            rm -f "${_I_SYMLINK_DIR}/${name}"
         done
+
+        # 尝试清理空的版本目录
+        rmdir "$_I_INSTALL_DIR" 2>/dev/null || true
 
         return 1
     fi
@@ -402,6 +452,7 @@ _i_cleanup() {
     [ -n "${_I_TMPDIR:-}" ] && rm -rf "$_I_TMPDIR"
     unset _I_NAME _I_REPO _I_FALLBACK _I_VERSION_ENV
     unset _I_VERSION _I_TAG _I_OS _I_ARCH _I_TARGET
-    unset _I_INSTALL_DIR _I_CACHE_DIR _I_ARCHIVED _I_TMPDIR
+    unset _I_SYMLINK_DIR _I_BACKING_DIR _I_INSTALL_DIR _I_SYMLINK_MODE
+    unset _I_CACHE_DIR _I_ARCHIVED _I_TMPDIR
     unset _I_INSTALL_COUNT
 }
