@@ -516,17 +516,11 @@ _i_migrate_current_install() {
         installer | .version | *.app | *.md | *.txt) continue ;;
         esac
 
-        # 已是指向 installer/ 的软链接 → 跳过
+        # 跳过软链接（需由各自的安装脚本管理）
         if [ -L "$_mi_entry" ]; then
-            local _mi_target
-            _mi_target=$(readlink "$_mi_entry" 2>/dev/null || true)
-            case "$_mi_target" in
-            */installer/*)
-                echo "  [跳过] ${_mi_name} (已迁移)"
-                _mi_skipped=$((_mi_skipped + 1))
-                continue
-                ;;
-            esac
+            echo "  [跳过] ${_mi_name} (软链接)"
+            _mi_skipped=$((_mi_skipped + 1))
+            continue
         fi
 
         # 确定工具名（处理 binary ≠ tool 的特殊情况）
