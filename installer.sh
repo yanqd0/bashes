@@ -30,31 +30,106 @@ function installer {
         [zoxide]="智能 cd 替代，根据访问频率自动跳转"
     )
 
-    if [ $# -eq 0 ]; then
+    # -----------------------------------------------------------------------
+    # 命令行解析
+    # -----------------------------------------------------------------------
+    local opt_help=false
+    local opt_list=true
+    local opt_migrate=false
+    local tool_name=""
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        -h | --help)
+            opt_help=true
+            opt_list=false
+            shift
+            ;;
+        -l | --list)
+            opt_list=true
+            shift
+            ;;
+        -m | --migrate)
+            opt_migrate=true
+            opt_list=false
+            shift
+            ;;
+        --)
+            shift
+            [ $# -gt 0 ] && tool_name="$1"
+            opt_list=false
+            break
+            ;;
+        -*)
+            opt_list=false
+            echo "installer: 未知选项 '$1'，使用 -h 查看帮助" >&2
+            return 1
+            ;;
+        *)
+            tool_name="$1"
+            opt_list=false
+            shift
+            break
+            ;;
+        esac
+    done
+
+    # 不接受选项后还拼一个工具名（除了 --list 和 --help 互相兼容）
+    if [ -n "$tool_name" ] && ($opt_migrate); then
+        echo "installer: --migrate 不接受工具名参数" >&2
+        return 1
+    fi
+
+    # -----------------------------------------------------------------------
+    # --help / -h
+    # -----------------------------------------------------------------------
+    if $opt_help; then
+        cat <<'EOF'
+用法: installer [选项] [名称]
+
+选项:
+  -h, --help      打印此帮助信息
+  -l, --list      列出可安装的工具
+  -m, --migrate   将 ~/bin/ 下的扁平二进制迁移到版本化存储
+
+无选项时，installer <名称> 安装指定工具。
+不带任何参数则等同于 --list。
+EOF
+        return 0
+    fi
+
+    # -----------------------------------------------------------------------
+    # --migrate / -m
+    # -----------------------------------------------------------------------
+    if $opt_migrate; then
+        source "$HOME/.bash/installer/_common.sh"
+        _i_migrate_current_install
+        return $?
+    fi
+
+    # -----------------------------------------------------------------------
+    # --list / -l 或无参数（默认行为）
+    # -----------------------------------------------------------------------
+    if $opt_list; then
         echo "可安装内容："
         local f name
         for f in "$installer_dir"/*.sh; do
             [ -f "$f" ] || continue
             name=$(basename "$f" .sh)
-            # 跳过 _ 开头的内部文件
             case "$name" in _*) continue ;; esac
             printf "  %-16s %s\n" "$name" "${desc[$name]:-}"
         done
         return 0
     fi
 
-    # --migrate: 将 ~/bin/ 下的扁平二进制迁移到版本化存储
-    if [ "$1" = "--migrate" ]; then
-        source "$HOME/.bash/installer/_common.sh"
-        _i_migrate_current_install
-        return $?
-    fi
-
-    local script="$installer_dir/$1.sh"
+    # -----------------------------------------------------------------------
+    # 安装指定工具
+    # -----------------------------------------------------------------------
+    local script="$installer_dir/$tool_name.sh"
     if [ -f "$script" ]; then
         source "$script"
     else
-        echo "installer: 未找到 '$1' 的安装脚本" >&2
+        echo "installer: 未找到 '$tool_name' 的安装脚本" >&2
         return 1
     fi
 }
