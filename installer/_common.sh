@@ -445,6 +445,123 @@ _i_path_warning() {
 }
 
 # ---------------------------------------------------------------------------
+# _i_migrate_detect_version <binary_path>
+# 尝试检测已安装二进制文件的版本号
+# 依次尝试 --version → version 子命令 → 正则提取 → "unknown"
+# ---------------------------------------------------------------------------
+_i_migrate_detect_version() {
+    local _md_binary="$1"
+    local _md_output=""
+
+    # 策略 1: --version
+    _md_output=$("$_md_binary" --version 2>/dev/null) || true
+
+    # 策略 2: version 子命令（如 hugo version、k9s version）
+    if [ -z "$_md_output" ]; then
+        _md_output=$("$_md_binary" version 2>/dev/null) || true
+    fi
+
+    if [ -z "$_md_output" ]; then
+        echo "unknown"
+        return
+    fi
+
+    # 提取版本号：优先 semver (vX.Y.Z 或 X.Y.Z)
+    local _md_ver
+    _md_ver=$(echo "$_md_output" | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+
+    # 回退：X.Y 格式
+    if [ -z "$_md_ver" ]; then
+        _md_ver=$(echo "$_md_output" | grep -oE 'v?[0-9]+\.[0-9]+' | head -1)
+    fi
+
+    # 回退：纯数字版本号（如 b9769）
+    if [ -z "$_md_ver" ]; then
+        _md_ver=$(echo "$_md_output" | grep -oE '[0-9]{4,}' | head -1)
+    fi
+
+    echo "${_md_ver:-unknown}"
+}
+
+# ---------------------------------------------------------------------------
+# _i_migrate_current_install [symlink_dir] [backing_root]
+# 将 ~/bin/ 下的扁平二进制文件迁移到版本化存储结构
+# 扫描指定目录中的可执行文件，检测版本后移到 backing store，创建软链接
+# ---------------------------------------------------------------------------
+_i_migrate_current_install() {
+    local _mi_symlink_dir="${1:-$HOME/bin}"
+    local _mi_backing_root="${2:-$HOME/bin/installer}"
+
+    # 已知的 binary 名 → tool 名映射（binary 与工具名不同的情况）
+    local _mi_difft_tool _mi_llama_tool _mi_warp_tool
+    _mi_difft_tool="difftastic"
+    _mi_llama_tool="llama.cpp"
+    _mi_warp_tool="warp"
+
+    echo "=== 迁移已安装的工具到版本化存储 ==="
+    echo "扫描: ${_mi_symlink_dir}"
+    echo "存储: ${_mi_backing_root}"
+    echo ""
+
+    local _mi_migrated=0
+    local _mi_skipped=0
+
+    for _mi_entry in "$_mi_symlink_dir"/*; do
+        [ -f "$_mi_entry" ] || continue
+        local _mi_name
+        _mi_name=$(basename "$_mi_entry")
+
+        # 跳过已知非二进制文件
+        case "$_mi_name" in
+        installer | .version | *.app | *.md | *.txt) continue ;;
+        esac
+
+        # 已是指向 installer/ 的软链接 → 跳过
+        if [ -L "$_mi_entry" ]; then
+            local _mi_target
+            _mi_target=$(readlink "$_mi_entry" 2>/dev/null || true)
+            case "$_mi_target" in
+            */installer/*)
+                echo "  [跳过] ${_mi_name} (已迁移)"
+                _mi_skipped=$((_mi_skipped + 1))
+                continue
+                ;;
+            esac
+        fi
+
+        # 确定工具名（处理 binary ≠ tool 的特殊情况）
+        local _mi_tool="$_mi_name"
+        case "$_mi_name" in
+        difft) _mi_tool="$_mi_difft_tool" ;;
+        llama-cli | llama-server | llama-*)
+            _mi_tool="$_mi_llama_tool"
+            ;;
+        warp-terminal) _mi_tool="$_mi_warp_tool" ;;
+        esac
+
+        # 检测版本
+        echo "  [迁移] ${_mi_name} (工具: ${_mi_tool})"
+        local _mi_vers
+        _mi_vers=$(_i_migrate_detect_version "$_mi_entry")
+
+        # 创建版本化目录并移动
+        local _mi_ver_dir="${_mi_backing_root}/${_mi_tool}/${_mi_vers}"
+        mkdir -p "$_mi_ver_dir"
+        mv "$_mi_entry" "${_mi_ver_dir}/${_mi_name}"
+        chmod +x "${_mi_ver_dir}/${_mi_name}"
+
+        # 创建软链接替换原文件
+        ln -sf "${_mi_ver_dir}/${_mi_name}" "$_mi_entry"
+
+        echo "    ${_mi_entry} -> ${_mi_ver_dir}/${_mi_name}"
+        _mi_migrated=$((_mi_migrated + 1))
+    done
+
+    echo ""
+    echo "迁移完成: ${_mi_migrated} 个已迁移, ${_mi_skipped} 个跳过"
+}
+
+# ---------------------------------------------------------------------------
 # _i_cleanup
 # 清理所有 _I_ 前缀的全局变量
 # ---------------------------------------------------------------------------

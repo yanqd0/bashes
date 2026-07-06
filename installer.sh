@@ -43,6 +43,13 @@ function installer {
         return 0
     fi
 
+    # --migrate: 将 ~/bin/ 下的扁平二进制迁移到版本化存储
+    if [ "$1" = "--migrate" ]; then
+        source "$HOME/.bash/installer/_common.sh"
+        _i_migrate_current_install
+        return $?
+    fi
+
     local script="$installer_dir/$1.sh"
     if [ -f "$script" ]; then
         source "$script"
