@@ -452,16 +452,16 @@ _i_path_warning() {
 _i_migrate_detect_version() {
     local _md_binary="$1"
     local _md_output=""
+    local _md_ok=false
 
-    # 策略 1: --version
-    _md_output=$("$_md_binary" --version 2>/dev/null) || true
-
-    # 策略 2: version 子命令（如 hugo version、k9s version）
-    if [ -z "$_md_output" ]; then
-        _md_output=$("$_md_binary" version 2>/dev/null) || true
+    # 策略 1: --version（超时 5 秒，避免 GUI 应用挂起）
+    _md_output=$(timeout 5 "$_md_binary" --version 2>/dev/null) && _md_ok=true || true
+    if ! $_md_ok; then
+        # 策略 2: version 子命令（如 hugo version、k9s version）
+        _md_output=$(timeout 5 "$_md_binary" version 2>/dev/null) && _md_ok=true || true
     fi
 
-    if [ -z "$_md_output" ]; then
+    if ! $_md_ok || [ -z "$_md_output" ]; then
         echo "unknown"
         return
     fi
@@ -513,7 +513,7 @@ _i_migrate_current_install() {
 
         # 跳过已知非二进制文件
         case "$_mi_name" in
-        installer | .version | *.app | *.md | *.txt) continue ;;
+        installer | .version | *.app | *.md | *.txt | lm-studio) continue ;;
         esac
 
         # 跳过软链接（需由各自的安装脚本管理）
