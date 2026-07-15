@@ -158,7 +158,8 @@ _i_check_installed() {
     if command -v "$cmd" &>/dev/null; then
         echo "${_I_NAME} 已安装，当前版本："
         $cmd $ver_args 2>/dev/null || true
-        read -r -p "是否强制重新安装？[y/N] " REPLY
+        echo -n "是否强制重新安装？[y/N] " >&2
+        read -r REPLY
         case "${REPLY:-N}" in
         [yY] | [yY][eE][sS]) ;;
         *)
@@ -229,14 +230,22 @@ _i_github_download() {
     local resuming=false
 
     # 续传检测：临时文件存在 且 .version 可读
+    # 若调用方已设置 _I_VERSION（如通过环境变量），先比较：不同则丢弃旧下载
     if [ -f "$downloading" ] && [ -f "$version_file" ]; then
-        resuming=true
-        _I_VERSION=$(cat "$version_file")
-        _I_TAG="${_I_VERSION}"
-        _I_INSTALL_DIR="${_I_BACKING_DIR}/${_I_VERSION}"
-        echo "发现未完成的下载（版本 ${_I_VERSION}），将续传..."
-        echo "  文件: ${downloading}"
-        echo "  已下载: $(du -h "$downloading" | cut -f1)"
+        local _resume_version
+        _resume_version=$(cat "$version_file")
+        if [ -n "${_I_VERSION:-}" ] && [ "$_I_VERSION" != "$_resume_version" ]; then
+            echo "版本请求 (${_I_VERSION}) 与未完成下载 (${_resume_version}) 不一致，丢弃旧文件"
+            rm -f "$downloading" "$version_file"
+        else
+            resuming=true
+            _I_VERSION="$_resume_version"
+            _I_TAG="${_I_VERSION}"
+            _I_INSTALL_DIR="${_I_BACKING_DIR}/${_I_VERSION}"
+            echo "发现未完成的下载（版本 ${_I_VERSION}），将续传..."
+            echo "  文件: ${downloading}"
+            echo "  已下载: $(du -h "$downloading" | cut -f1)"
+        fi
     fi
 
     # 若非续传：检测版本 → 归档复用检查
@@ -305,13 +314,14 @@ _i_extract() {
             echo "[错误] 需要 unzip 命令" >&2
             return 1
         fi
-        if [ "$strip" -gt 0 ]; then
-            echo "[错误] zip 归档不支持 strip_components > 0" >&2
+        if [ "$strip" -gt 1 ]; then
+            echo "[错误] zip 归档仅支持 --strip-components=1" >&2
             return 1
         fi
         # CWE-22：提取 unzip -l 输出的文件名列进行校验
-        if unzip -l "$_I_ARCHIVED" 2>/dev/null | \
-            awk 'NR>3 && NF>3 && !/^---/ {print $NF}' | \
+        # 使用 sed 提取文件名（跳过表头和表尾），避免 awk $NF 因文件名含空格而截断
+        if unzip -l "$_I_ARCHIVED" 2>/dev/null |
+            sed -n '1,/^---/d; /^---/q; s/^.\{1,\}[0-9]\{2\}:[0-9]\{2\}[[:space:]]\{1,\}//p' |
             grep -qE '^/|(^|/)\.\.(/|$)'; then
             echo "[错误] 压缩包包含不安全的路径，拒绝解压" >&2
             return 1
@@ -324,6 +334,20 @@ _i_extract() {
             rm -rf "$_I_TMPDIR"
             return 1
         }
+
+        # zip 不支持原生 --strip-components，解压后模拟：自动检测单顶层目录
+        if [ "$strip" -gt 0 ]; then
+            local _items=("$_I_TMPDIR"/*)
+            if [ ${#_items[@]} -eq 1 ] && [ -d "${_items[0]}" ]; then
+                local _wrapper="${_items[0]}"
+                mv "$_wrapper"/* "$_I_TMPDIR/" 2>/dev/null
+                rmdir "$_wrapper" 2>/dev/null
+            else
+                echo "[错误] zip 归档不包含单一顶层目录，无法剥离" >&2
+                rm -rf "$_I_TMPDIR"
+                return 1
+            fi
+        fi
         ;;
     *)
         # CWE-22 安全检查：拒绝含绝对路径或路径穿越的压缩包
@@ -383,9 +407,7 @@ _i_install_all() {
         name=$(basename "$f")
 
         # 内置排除
-        case "$name" in
-        LICENSE | README* | *.md | *.a | *.dylib | *.so | *.so.*) continue ;;
-        esac
+        _i_is_excluded "$name" && continue
 
         # 额外排除
         local skip=false
@@ -438,6 +460,18 @@ _i_symlink_install() {
 }
 
 # ---------------------------------------------------------------------------
+# _i_is_excluded <name>
+# 判断文件名是否应被排除（LICENSE、README、库文件、文档等）
+# 排除规则同时用于 _i_install_all 和 _i_verify 的清理逻辑
+# ---------------------------------------------------------------------------
+_i_is_excluded() {
+    case "$1" in
+    LICENSE | README* | *.md | *.a | *.dylib | *.so | *.so.*) return 0 ;;
+    esac
+    return 1
+}
+
+# ---------------------------------------------------------------------------
 # _i_verify <binary_path> [test_args]
 # 验证安装的二进制是否可用
 # 成功返回 0，失败时自动清理 _I_TMPDIR 中对应的已安装文件及软链接
@@ -458,9 +492,7 @@ _i_verify() {
             [ -f "$f" ] || continue
             local name
             name=$(basename "$f")
-            case "$name" in
-            LICENSE | README* | *.md | *.a | *.dylib | *.so | *.so.*) continue ;;
-            esac
+            _i_is_excluded "$name" && continue
             rm -f "${_I_INSTALL_DIR}/${name}"
             rm -f "${_I_SYMLINK_DIR}/${name}"
         done
@@ -494,11 +526,17 @@ _i_migrate_detect_version() {
     local _md_output=""
     local _md_ok=false
 
+    # 超时包装：macOS 默认无 timeout 命令，检测后降级为直接执行
+    local _md_timeout="timeout 5"
+    if ! command -v timeout &>/dev/null; then
+        _md_timeout=""
+    fi
+
     # 策略 1: --version（超时 5 秒，避免 GUI 应用挂起）
-    _md_output=$(timeout 5 "$_md_binary" --version 2>/dev/null) && _md_ok=true || true
+    _md_output=$($_md_timeout "$_md_binary" --version 2>/dev/null) && _md_ok=true || true
     if ! $_md_ok; then
         # 策略 2: version 子命令（如 hugo version、k9s version）
-        _md_output=$(timeout 5 "$_md_binary" version 2>/dev/null) && _md_ok=true || true
+        _md_output=$($_md_timeout "$_md_binary" version 2>/dev/null) && _md_ok=true || true
     fi
 
     if ! $_md_ok || [ -z "$_md_output" ]; then

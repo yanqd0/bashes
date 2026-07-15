@@ -65,7 +65,8 @@ _deno_select_url() {
     echo "  1) GitHub 官方（默认）" >&2
     echo "  2) 国内镜像 dl.deno.js.cn" >&2
     echo "" >&2
-    read -r -p "  请输入选项 [1/2]（默认 1）: " _deno_choice
+    echo -n "  请输入选项 [1/2]（默认 1）: " >&2
+    read -r _deno_choice
 
     case "${_deno_choice:-1}" in
     2)
@@ -104,4 +105,5 @@ _i_verify "${_I_INSTALL_DIR}/deno" "--version" || {
     return 1
 }
 _i_path_warning "deno"
+unset -f _deno_select_url
 _i_cleanup

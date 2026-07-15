@@ -2,7 +2,8 @@
 #
 # v2rayN 安装脚本
 # V2Ray/Xray 代理客户端，基于 Avalonia 跨平台 GUI
-# 多文件 GUI 应用，直接安装到版本目录，~/bin/v2rayN 为软链接
+# 多文件 GUI 应用，使用 _i_github_download + _i_extract 公共流水线，
+# 安装阶段自定义递归复制，~/bin/v2rayN 为软链接
 #
 # 使用方式：
 #   installer v2rayN                       # 自动检测最新版本并安装
@@ -27,101 +28,55 @@ _i_setup "v2rayN" "2dust/v2rayN" "7.22.7" "V2RAYN_VERSION"
 [ -n "${V2RAYN_VERSION:-}" ] && _I_VERSION="$V2RAYN_VERSION"
 
 # ---------------------------------------------------------------------------
-# 3. 已安装检查
+# 3. 已安装检查（使用公共函数，自动显示版本）
 # ---------------------------------------------------------------------------
-if command -v v2rayN &>/dev/null; then
-    echo "v2rayN 已安装"
-    read -r -p "是否强制重新安装？[y/N] " REPLY
-    case "${REPLY:-N}" in
-    [yY] | [yY][eE][sS]) ;;
-    *)
-        echo "已取消。"
-        return 0
-        ;;
-    esac
-fi
+_i_check_installed "v2rayN" "--version" || return 0
 
 # ---------------------------------------------------------------------------
-# 4. 版本检测
+# 4. 下载（使用公共流水线，获得续传恢复 + 版本化归档 + 归档完整性校验）
 # ---------------------------------------------------------------------------
-_i_detect_version
-
-# ---------------------------------------------------------------------------
-# 5. 下载（v2rayN 使用 .zip 格式，~130MB）
-# ---------------------------------------------------------------------------
-_zip_name="v2rayN-${_I_OS}-${_I_ARCH}.zip"
-_zip_downloading="${_I_CACHE_DIR}/${_zip_name}"
-
-# 检查缓存的归档
-_zip_archived="${_I_CACHE_DIR}/${_I_VERSION}/${_zip_name}"
-if [ -f "$_zip_archived" ]; then
-    echo "复用已缓存的文件: ${_zip_archived}"
-else
-    _zip_url="https://github.com/2dust/v2rayN/releases/download/${_I_TAG}/${_zip_name}"
-    echo "下载: ${_zip_url}"
-    wget -c --show-progress -O "$_zip_downloading" "$_zip_url" || {
-        echo "[错误] 下载失败" >&2
-        rm -f "$_zip_downloading"
-        return 1
-    }
-    mkdir -p "$(dirname "$_zip_archived")"
-    mv "$_zip_downloading" "$_zip_archived"
-    echo "已归档: ${_zip_archived}"
-fi
-
-# ---------------------------------------------------------------------------
-# 6. 解压 & 安装到版本目录
-# ---------------------------------------------------------------------------
-_tmpdir=$(mktemp -d)
-
-if ! command -v unzip &>/dev/null; then
-    echo "[错误] 需要 unzip 命令，请先安装：sudo apt install unzip" >&2
-    rm -rf "$_tmpdir"
+_i_github_download "v2rayN-${_I_OS}-${_I_ARCH}.zip" \
+    "https://github.com/2dust/v2rayN/releases/download/<tag>/v2rayN-<os>-<arch>.zip" ||
     return 1
-fi
 
-echo "解压到 ${_I_INSTALL_DIR}/"
-rm -rf "$_I_INSTALL_DIR"
+# ---------------------------------------------------------------------------
+# 5. 解压（使用公共函数，含 CWE-22 安全检查 + zip auto-strip 单顶层目录）
+# ---------------------------------------------------------------------------
+_i_extract 1 || return 1
+
+# ---------------------------------------------------------------------------
+# 6. 安装到版本目录（多文件 GUI 应用，递归复制全部内容）
+# ---------------------------------------------------------------------------
+rm -rf "${_I_INSTALL_DIR:?}"
 mkdir -p "$_I_INSTALL_DIR"
 
-unzip -o "$_zip_archived" -d "$_tmpdir" >/dev/null || {
-    echo "[错误] 解压失败" >&2
-    rm -rf "$_tmpdir"
-    return 1
-}
-
-# 若解压后仅有一个顶层目录，则上移一层（--strip-components=1 等效）
-_src_dir="$_tmpdir"
-_items=("$_tmpdir"/*)
-if [ ${#_items[@]} -eq 1 ] && [ -d "${_items[0]}" ]; then
-    _src_dir="${_items[0]}"
-fi
-
-# v2rayN 是完整的应用包，全部文件安装到子目录
-_count=0
-for f in "$_src_dir"/*; do
-    [ -e "$f" ] || continue
-    name=$(basename "$f")
-    cp -rf "$f" "${_I_INSTALL_DIR}/"
-    if [ -f "$f" ]; then
-        chmod +x "${_I_INSTALL_DIR}/${name}" 2>/dev/null || true
-        echo "  ${name}"
-    elif [ -d "$f" ]; then
-        echo "  ${name}/"
+_v2rayN_count=0
+for _v2rayN_f in "$_I_TMPDIR"/*; do
+    [ -e "$_v2rayN_f" ] || continue
+    _v2rayN_name=$(basename "$_v2rayN_f")
+    cp -rf "$_v2rayN_f" "${_I_INSTALL_DIR}/"
+    if [ -f "$_v2rayN_f" ]; then
+        chmod +x "${_I_INSTALL_DIR}/${_v2rayN_name}" 2>/dev/null || true
+        echo "  ${_v2rayN_name}"
+    elif [ -d "$_v2rayN_f" ]; then
+        echo "  ${_v2rayN_name}/"
     fi
-    _count=$((_count + 1))
+    _v2rayN_count=$((_v2rayN_count + 1))
 done
+echo "共安装 ${_v2rayN_count} 项"
 
-rm -rf "$_tmpdir"
-echo "共安装 ${_count} 项"
-
-# 创建 ~/bin/v2rayN 软链接指向主程序
+# ---------------------------------------------------------------------------
+# 7. 创建 ~/bin/v2rayN 软链接指向主程序
+# ---------------------------------------------------------------------------
 _i_symlink_install "v2rayN"
 
-# 验证安装
+# ---------------------------------------------------------------------------
+# 8. 验证安装
 # ---------------------------------------------------------------------------
 echo ""
-if [ -f "${_I_INSTALL_DIR}/v2rayN" ] || [ -f "${_I_INSTALL_DIR}/v2rayN.exe" ]; then
+if [ -f "${_I_INSTALL_DIR}/v2rayN" ]; then
+    # 尝试打印版本（GUI 应用可能无 --version，用 timeout 防护）
+    timeout 5 "${_I_INSTALL_DIR}/v2rayN" --version 2>/dev/null || true
     echo "v2rayN 安装完成！"
     echo "启动: v2rayN"
 else
@@ -129,6 +84,6 @@ else
     echo "已安装内容："
     ls -la "$_I_INSTALL_DIR/" 2>/dev/null
 fi
-
+_i_path_warning "v2rayN"
 _i_cleanup
-unset _zip_name _zip_downloading _zip_archived _zip_url _tmpdir _src_dir _items _count
+unset _v2rayN_f _v2rayN_name _v2rayN_count

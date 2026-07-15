@@ -76,7 +76,7 @@ function installer {
     done
 
     # 不接受选项后还拼一个工具名（除了 --list 和 --help 互相兼容）
-    if [ -n "$tool_name" ] && ($opt_migrate); then
+    if [ -n "$tool_name" ] && $opt_migrate; then
         echo "installer: --migrate 不接受工具名参数" >&2
         return 1
     fi
