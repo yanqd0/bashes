@@ -39,3 +39,6 @@ Temporary Items
 .apdisk
 
 /cht.sh
+
+# Claude Code 工作树（临时隔离工作区，由 EnterWorktree 创建）
+.claude/worktrees/
