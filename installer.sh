@@ -119,7 +119,11 @@ EOF
             [ -f "$f" ] || continue
             name=$(basename "$f" .sh)
             case "$name" in _*) continue ;; esac
-            printf "  %-16s %s\n" "$name" "${desc[$name]:-}"
+            if [ ${#name} -gt 16 ]; then
+                printf "  %s\n                   %s\n" "$name" "${desc[$name]:-}"
+            else
+                printf "  %-16s %s\n" "$name" "${desc[$name]:-}"
+            fi
         done
         return 0
     fi
