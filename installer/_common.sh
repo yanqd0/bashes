@@ -183,7 +183,9 @@ _i_detect_version() {
     if [ -n "${_I_VERSION:-}" ]; then
         echo "使用指定版本: ${_I_VERSION}"
         _I_TAG="${_I_VERSION}"
-        _I_INSTALL_DIR="${_I_BACKING_DIR}/${_I_VERSION}"
+        if [ "$_I_SYMLINK_MODE" != "none" ]; then
+            _I_INSTALL_DIR="${_I_BACKING_DIR}/${_I_VERSION}"
+        fi
         return 0
     fi
 
@@ -205,7 +207,9 @@ _i_detect_version() {
     fi
 
     _I_TAG="${_I_VERSION}"
-    _I_INSTALL_DIR="${_I_BACKING_DIR}/${_I_VERSION}"
+    if [ "$_I_SYMLINK_MODE" != "none" ]; then
+        _I_INSTALL_DIR="${_I_BACKING_DIR}/${_I_VERSION}"
+    fi
 }
 
 # ---------------------------------------------------------------------------
@@ -242,7 +246,9 @@ _i_github_download() {
             resuming=true
             _I_VERSION="$_resume_version"
             _I_TAG="${_I_VERSION}"
-            _I_INSTALL_DIR="${_I_BACKING_DIR}/${_I_VERSION}"
+            if [ "$_I_SYMLINK_MODE" != "none" ]; then
+                _I_INSTALL_DIR="${_I_BACKING_DIR}/${_I_VERSION}"
+            fi
             echo "发现未完成的下载（版本 ${_I_VERSION}），将续传..."
             echo "  文件: ${downloading}"
             echo "  已下载: $(du -h "$downloading" | cut -f1)"
