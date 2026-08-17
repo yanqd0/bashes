@@ -8,7 +8,7 @@ function installer {
     desc=(
         [bat]="cat 的现代化替代，支持语法高亮与 Git 标记"
         [brew]="macOS / Linux 包管理器，使用阿里云镜像安装"
-        [codebase-memory-mcp]="MCP 服务器：为 AI 编码助手提供代码库长期记忆"
+        ["codebase-memory-mcp"]="MCP 服务器：为 AI 编码助手提供代码库长期记忆"
         [delta]="git diff 美化工具，支持语法高亮与并排对比"
         [deno]="JavaScript/TypeScript 运行时，Rust 预编译，单一二进制"
         [difftastic]="语义化 diff 工具，理解代码结构而非逐行对比"
@@ -24,6 +24,7 @@ function installer {
         [llama.cpp]="高性能 LLM 推理引擎，支持 CPU/GPU 混合推理"
         [mint]="本地 issue 跟踪系统，Rust 编写、SQLite 存储"
         [mold]="极速链接器，GNU ld 的现代化替代"
+        [nvm]="Node 版本管理器，官方脚本安装到 ~/.nvm"
         [rtk]="CLI 代理工具，减少 LLM token 消耗 60-90%"
         [rustup]="Rust 工具链管理器（使用阿里云镜像安装）"
         [stylua]="Lua 代码格式化工具，Rust 预编译"
