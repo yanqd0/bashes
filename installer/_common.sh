@@ -45,7 +45,7 @@
 
 # ---------------------------------------------------------------------------
 # _i_check_archive <file>
-# 校验压缩包完整性：优先 check_compressed → 按扩展名选择 unzip -t / tar -tzf
+# 校验压缩包完整性：优先 check_compressed → 按扩展名选择 unzip -t / tar -tf
 # ---------------------------------------------------------------------------
 _i_check_archive() {
     if declare -F check_compressed &>/dev/null; then
@@ -62,7 +62,8 @@ _i_check_archive() {
         fi
         ;;
     *)
-        tar -tzf "$1" >/dev/null 2>&1
+        # tar -tf 自动检测压缩格式（gzip/xz/bzip2），兼容 .tar.gz 与 .tar.xz
+        tar -tf "$1" >/dev/null 2>&1
         ;;
     esac
 }
@@ -301,7 +302,7 @@ _i_github_download() {
 # ---------------------------------------------------------------------------
 # _i_extract [strip_components]
 # 解压压缩包到临时目录，自动做 CWE-22 安全检查
-# 支持 .tar.gz 和 .zip 格式，由 _I_ARCHIVED 扩展名自动判断
+# 支持 .tar.gz / .tar.xz / .zip 格式，由 _I_ARCHIVED 扩展名自动判断
 # 结果存入 _I_TMPDIR（_i_cleanup 负责清理）
 # ---------------------------------------------------------------------------
 _i_extract() {
@@ -351,14 +352,14 @@ _i_extract() {
         ;;
     *)
         # CWE-22 安全检查：拒绝含绝对路径或路径穿越的压缩包
-        if tar -tzf "$_I_ARCHIVED" 2>/dev/null | grep -qE '^/|(^|/)\.\.(/|$)'; then
+        if tar -tf "$_I_ARCHIVED" 2>/dev/null | grep -qE '^/|(^|/)\.\.(/|$)'; then
             echo "[错误] 压缩包包含不安全的路径，拒绝解压" >&2
             return 1
         fi
         _I_TMPDIR=$(mktemp -d)
         echo "解压..."
         mkdir -p "$_I_INSTALL_DIR"
-        tar -xzf "$_I_ARCHIVED" --strip-components="$strip" -C "$_I_TMPDIR" || {
+        tar -xf "$_I_ARCHIVED" --strip-components="$strip" -C "$_I_TMPDIR" || {
             echo "[错误] 解压失败" >&2
             rm -rf "$_I_TMPDIR"
             return 1
