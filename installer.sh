@@ -165,13 +165,17 @@ EOF
         opt_list=true
     fi
 
+    # TTY 下 mark 带颜色；命令替换子 shell 中 [ -t 1 ] 恒为假，须在此预先检测
+    local color=""
+    [ -t 1 ] && color=1
+
     # -----------------------------------------------------------------------
     # --list / -l：分组 + 已安装标记 + 分屏
     # -----------------------------------------------------------------------
     if $opt_list; then
         local -a lines=() names=()
         lines+=("可安装内容：")
-        local name mark c
+        local name c _l
         while IFS= read -r name; do names+=("$name"); done < <(_installer_collect_tools)
 
         for c in "${cat_order[@]}"; do
@@ -179,14 +183,8 @@ EOF
             lines+=("  ${cat_name[$c]}")
             for name in "${names[@]}"; do
                 [ "${cat[$name]:-}" = "$c" ] || continue
-                mark="  "
-                _installer_is_installed "$name" && mark="✓ "
-                if [ ${#name} -gt 16 ]; then
-                    lines+=("    ${name} ${mark}")
-                    lines+=("                      ${desc[$name]:-}")
-                else
-                    lines+=("    $(printf '%-16s' "$name")${mark}${desc[$name]:-}")
-                fi
+                while IFS= read -r _l; do lines+=("$_l"); done \
+                    < <(_installer_list_line "$name" "${desc[$name]:-}" "$color")
             done
         done
 
@@ -200,14 +198,8 @@ EOF
             lines+=("  未分类")
             for name in "${names[@]}"; do
                 [ -n "${cat[$name]:-}" ] && continue
-                mark="  "
-                _installer_is_installed "$name" && mark="✓ "
-                if [ ${#name} -gt 16 ]; then
-                    lines+=("    ${name} ${mark}")
-                    lines+=("                      ${desc[$name]:-}")
-                else
-                    lines+=("    $(printf '%-16s' "$name")${mark}${desc[$name]:-}")
-                fi
+                while IFS= read -r _l; do lines+=("$_l"); done \
+                    < <(_installer_list_line "$name" "${desc[$name]:-}" "$color")
             done
         fi
 
@@ -220,17 +212,15 @@ EOF
     # -----------------------------------------------------------------------
     if $opt_pick; then
         local -a choices=() names=()
-        local name mark
+        local name
         while IFS= read -r name; do names+=("$name"); done < <(_installer_collect_tools)
         for name in "${names[@]}"; do
-            mark="  "
-            _installer_is_installed "$name" && mark="✓ "
             # 工具名用 tab 分隔，选择结果用 cut -f1 提取，工具名含空格也不受影响
-            choices+=("$(printf '%s\t%s%s  [%s]' "$name" "$mark" \
+            choices+=("$(printf '%s\t%s%s  [%s]' "$name" "$(_installer_mark "$name" "$color")" \
                 "${desc[$name]:-}" "${cat_name[${cat[$name]:-code}]}")")
         done
         local sel chosen
-        sel=$(printf '%s\n' "${choices[@]}" | fzf --reverse --height=60% \
+        sel=$(printf '%s\n' "${choices[@]}" | fzf --ansi --reverse --height=60% \
             --delimiter=$'\t' \
             --header='输入过滤（含分类名），回车安装，ESC 取消' 2>/dev/null)
         [ -n "$sel" ] || return 0
@@ -264,6 +254,47 @@ function _installer_collect_tools {
         case "$name" in _*) continue ;; esac
         printf '%s\n' "$name"
     done
+}
+
+# ---------------------------------------------------------------------------
+# _installer_mark <tool> [color]
+# 输出安装状态标记：已装绿色 ✓，未装暗灰占位 ·。
+# color 非空时带 ANSI（由调用方在 TTY 上下文预先检测后传入——命令替换
+# 子 shell 中 [ -t 1 ] 恒为假，不能在此自查）
+# ---------------------------------------------------------------------------
+function _installer_mark {
+    local tool="$1" color="${2:-}" mark="·"
+    _installer_is_installed "$tool" && mark="✓"
+    if [ -n "$color" ]; then
+        if [ "$mark" = "✓" ]; then
+            printf '\033[32m✓\033[0m'
+        else
+            printf '\033[90m·\033[0m'
+        fi
+    else
+        printf '%s' "$mark"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# _installer_list_line <name> <desc> [color]
+# 渲染单个工具的行到 stdout（调用方收集）：短名单行；超长名（>18）名称
+# 单独一行，第二行「钩+描述」对齐到钩列（4 缩进 + 18 列 = 22）。
+# 空描述时超长名仅输出钩，避免悬空空白行。
+# ---------------------------------------------------------------------------
+function _installer_list_line {
+    local name="$1" desc="$2" color="${3:-}" mark
+    mark=$(_installer_mark "$name" "$color")
+    if [ ${#name} -gt 18 ]; then
+        printf '    %s\n' "$name"
+        if [ -n "$desc" ]; then
+            printf '                      %s %s\n' "$mark" "$desc"
+        else
+            printf '                      %s\n' "$mark"
+        fi
+    else
+        printf '    %-18s%s %s\n' "$name" "$mark" "$desc"
+    fi
 }
 
 # ---------------------------------------------------------------------------
