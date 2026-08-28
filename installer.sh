@@ -37,10 +37,39 @@ function installer {
     )
 
     # -----------------------------------------------------------------------
+    # 分类表：cat=工具名→分类 key；cat_name=分类 key→中文名；cat_order=展示顺序
+    # 新增工具时需同步在 cat 中登记分类（含连字符的 key 用引号包裹）
+    # -----------------------------------------------------------------------
+    declare -A cat_name cat
+    cat_name=(
+        [terminal]="终端增强"
+        [k8s]="Kubernetes"
+        [runtime]="运行时与包管理"
+        [network]="网络与代理"
+        [code]="代码工具"
+        [build]="性能与构建"
+        [ai]="AI 与效率"
+    )
+    local -a cat_order=(terminal k8s runtime network code build ai)
+    cat=(
+        [bat]="terminal" [eza]="terminal" [fd]="terminal"
+        [glow]="terminal" [hexyl]="terminal" [warp]="terminal"
+        [yazi]="terminal" [zoxide]="terminal"
+        [helm]="k8s" [k9s]="k8s" [kubectl]="k8s"
+        [brew]="runtime" [deno]="runtime" [nvm]="runtime"
+        [rustup]="runtime" [uv]="runtime"
+        [rclone]="network" [v2rayN]="network"
+        [delta]="code" [difftastic]="code" [mint]="code" [stylua]="code"
+        [hugo]="build" [hyperfine]="build" [mold]="build"
+        ["codebase-memory-mcp"]="ai" ["llama.cpp"]="ai" [rtk]="ai"
+    )
+
+    # -----------------------------------------------------------------------
     # 命令行解析
     # -----------------------------------------------------------------------
     local opt_help=false
-    local opt_list=true
+    local opt_list=false
+    local opt_pick=true
     local opt_migrate=false
     local tool_name=""
 
@@ -49,31 +78,42 @@ function installer {
         -h | --help)
             opt_help=true
             opt_list=false
+            opt_pick=false
             shift
             ;;
         -l | --list)
             opt_list=true
+            opt_pick=false
+            shift
+            ;;
+        -f | --pick)
+            opt_pick=true
+            opt_list=false
             shift
             ;;
         -m | --migrate)
             opt_migrate=true
             opt_list=false
+            opt_pick=false
             shift
             ;;
         --)
             shift
             [ $# -gt 0 ] && tool_name="$1"
             opt_list=false
+            opt_pick=false
             break
             ;;
         -*)
             opt_list=false
+            opt_pick=false
             echo "installer: 未知选项 '$1'，使用 -h 查看帮助" >&2
             return 1
             ;;
         *)
             tool_name="$1"
             opt_list=false
+            opt_pick=false
             shift
             break
             ;;
@@ -95,11 +135,12 @@ function installer {
 
 选项:
   -h, --help      打印此帮助信息
-  -l, --list      列出可安装的工具
+  -l, --list      分组列出可安装的工具（已安装标 ✓，过长时分屏）
+  -f, --pick      用 fzf 交互选择器挑选工具安装
   -m, --migrate   将 ~/bin/ 下的扁平二进制迁移到版本化存储
 
 无选项时，installer <名称> 安装指定工具。
-不带任何参数则等同于 --list。
+不带任何参数则进入 fzf 选择器；无 fzf 或非终端时回退为分组列表。
 EOF
         return 0
     fi
@@ -113,22 +154,88 @@ EOF
         return $?
     fi
 
+    # 无参默认 fzf，但无 fzf 或非交互 TTY：退化为分组列表
+    if $opt_pick && { [ ! -t 1 ] || ! command -v fzf >/dev/null 2>&1; }; then
+        if [ ! -t 1 ]; then
+            echo "installer: 非终端环境，退化为分组列表显示" >&2
+        else
+            echo "installer: 未安装 fzf，退化为分组列表显示" >&2
+        fi
+        opt_pick=false
+        opt_list=true
+    fi
+
     # -----------------------------------------------------------------------
-    # --list / -l 或无参数（默认行为）
+    # --list / -l：分组 + 已安装标记 + 分屏
     # -----------------------------------------------------------------------
     if $opt_list; then
-        echo "可安装内容："
-        local f name
-        for f in "$installer_dir"/*.sh; do
-            [ -f "$f" ] || continue
-            name=$(basename "$f" .sh)
-            case "$name" in _*) continue ;; esac
-            if [ ${#name} -gt 16 ]; then
-                printf "  %s\n                   %s\n" "$name" "${desc[$name]:-}"
-            else
-                printf "  %-16s %s\n" "$name" "${desc[$name]:-}"
-            fi
+        local -a lines=() names=()
+        lines+=("可安装内容：")
+        local name mark c
+        while IFS= read -r name; do names+=("$name"); done < <(_installer_collect_tools)
+
+        for c in "${cat_order[@]}"; do
+            lines+=("")
+            lines+=("  ${cat_name[$c]}")
+            for name in "${names[@]}"; do
+                [ "${cat[$name]:-}" = "$c" ] || continue
+                mark="  "
+                _installer_is_installed "$name" && mark="✓ "
+                if [ ${#name} -gt 16 ]; then
+                    lines+=("    ${name} ${mark}")
+                    lines+=("                      ${desc[$name]:-}")
+                else
+                    lines+=("    $(printf '%-16s' "$name")${mark}${desc[$name]:-}")
+                fi
+            done
         done
+
+        # 未登记分类的工具兜底到"未分类"组，避免在列表中静默消失（与 fzf 一致）
+        local has_unclassified=false
+        for name in "${names[@]}"; do
+            [ -z "${cat[$name]:-}" ] && has_unclassified=true
+        done
+        if $has_unclassified; then
+            lines+=("")
+            lines+=("  未分类")
+            for name in "${names[@]}"; do
+                [ -n "${cat[$name]:-}" ] && continue
+                mark="  "
+                _installer_is_installed "$name" && mark="✓ "
+                if [ ${#name} -gt 16 ]; then
+                    lines+=("    ${name} ${mark}")
+                    lines+=("                      ${desc[$name]:-}")
+                else
+                    lines+=("    $(printf '%-16s' "$name")${mark}${desc[$name]:-}")
+                fi
+            done
+        fi
+
+        _installer_pager "${lines[@]}"
+        return 0
+    fi
+
+    # -----------------------------------------------------------------------
+    # fzf 选择器（无参默认）：过滤选工具并安装
+    # -----------------------------------------------------------------------
+    if $opt_pick; then
+        local -a choices=() names=()
+        local name mark
+        while IFS= read -r name; do names+=("$name"); done < <(_installer_collect_tools)
+        for name in "${names[@]}"; do
+            mark="  "
+            _installer_is_installed "$name" && mark="✓ "
+            # 工具名用 tab 分隔，选择结果用 cut -f1 提取，工具名含空格也不受影响
+            choices+=("$(printf '%s\t%s%s  [%s]' "$name" "$mark" \
+                "${desc[$name]:-}" "${cat_name[${cat[$name]:-code}]}")")
+        done
+        local sel chosen
+        sel=$(printf '%s\n' "${choices[@]}" | fzf --reverse --height=60% \
+            --delimiter=$'\t' \
+            --header='输入过滤（含分类名），回车安装，ESC 取消' 2>/dev/null)
+        [ -n "$sel" ] || return 0
+        chosen=$(printf '%s' "$sel" | cut -d$'\t' -f1)
+        installer "$chosen"
         return 0
     fi
 
@@ -144,3 +251,101 @@ EOF
     fi
 }
 # }}}
+
+# ---------------------------------------------------------------------------
+# _installer_collect_tools
+# 输出所有安装脚本的工具名（跳过 _* 前缀），每行一个，供列表与 fzf 复用
+# ---------------------------------------------------------------------------
+function _installer_collect_tools {
+    local f name
+    for f in "$HOME/.bash/installer"/*.sh; do
+        [ -f "$f" ] || continue
+        name=$(basename "$f" .sh)
+        case "$name" in _*) continue ;; esac
+        printf '%s\n' "$name"
+    done
+}
+
+# ---------------------------------------------------------------------------
+# _installer_is_installed <tool>
+# 判断工具是否已安装：默认 command -v，特判命令名≠工具名的情况
+# ---------------------------------------------------------------------------
+function _installer_is_installed {
+    local tool="$1"
+    case "$tool" in
+    warp)
+        # Linux 命令名 warp-terminal；macOS 为 GUI 应用
+        command -v warp-terminal >/dev/null 2>&1 && return 0
+        [ -d "/Applications/Warp.app" ] && return 0
+        return 1
+        ;;
+    difftastic)
+        # 二进制名 difft，与工具名不同
+        command -v difft >/dev/null 2>&1
+        ;;
+    llama.cpp)
+        # 多二进制，任一存在即视为已装
+        command -v llama-cli >/dev/null 2>&1 || command -v llama-server >/dev/null 2>&1
+        ;;
+    nvm)
+        # nvm 是 shell 函数，非交互 shell 中 command -v 不可靠，改用文件检查
+        [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]
+        ;;
+    *)
+        command -v "$tool" >/dev/null 2>&1
+        ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# _installer_pager <lines...>
+# 分屏显示：非 TTY 全量输出 → less -FXR → 无 less 时手写翻页兜底
+# ---------------------------------------------------------------------------
+function _installer_pager {
+    local -a content=("$@")
+
+    # 非 TTY：直接全量输出（保持管道行为，如 installer | grep）
+    if [ ! -t 1 ]; then
+        printf '%s\n' "${content[@]}"
+        return 0
+    fi
+
+    # 首选 less：-F 不足一屏自动退出；-X 退出不刷屏；-R 原样透传
+    if command -v less >/dev/null 2>&1; then
+        printf '%s\n' "${content[@]}" | less -FXR
+        return 0
+    fi
+
+    # 无 less 兜底：按终端高度手写翻页
+    local height=24 t
+    t=$(tput lines 2>/dev/null) && [ -n "$t" ] && [ "$t" -gt 0 ] && height="$t"
+
+    if [ "${#content[@]}" -le "$height" ]; then
+        printf '%s\n' "${content[@]}"
+        return 0
+    fi
+
+    local i=0 key
+    while [ "$i" -lt "${#content[@]}" ]; do
+        local end=$((i + height - 1))
+        if [ "$end" -ge "${#content[@]}" ]; then
+            printf '%s\n' "${content[@]:i}"
+            break
+        fi
+        printf '%s\n' "${content[@]:i:height}"
+        printf -- "-- 更多 --（回车翻页 / q 退出）"
+        local _rc=0
+        if [ -n "$ZSH_VERSION" ]; then
+            IFS= read -rk1 key || _rc=$?
+        else
+            IFS= read -rn1 key || _rc=$?
+        fi
+        # 无论 read 成功还是 EOF，都补换行，避免下一页首行或 shell 提示符粘连
+        printf '\n'
+        [ "$_rc" -ne 0 ] && return 0
+        case "$key" in
+        q | Q) return 0 ;;
+        esac
+        i=$((i + height))
+    done
+}
