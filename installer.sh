@@ -7,6 +7,7 @@ function installer {
     declare -A desc
     desc=(
         [bat]="cat 的现代化替代，支持语法高亮与 Git 标记"
+        [caddy]="极简 Web 服务器，自动 HTTPS，Go 预编译单一二进制"
         [brew]="macOS / Linux 包管理器，使用阿里云镜像安装"
         ["codebase-memory-mcp"]="MCP 服务器：为 AI 编码助手提供代码库长期记忆"
         [delta]="git diff 美化工具，支持语法高亮与并排对比"
@@ -52,7 +53,7 @@ function installer {
     )
     local -a cat_order=(terminal k8s runtime network code build ai)
     cat=(
-        [bat]="terminal" [eza]="terminal" [fd]="terminal"
+        [bat]="terminal" [caddy]="network" [eza]="terminal" [fd]="terminal"
         [glow]="terminal" [hexyl]="terminal" [warp]="terminal"
         [yazi]="terminal" [zoxide]="terminal"
         [helm]="k8s" [k9s]="k8s" [kubectl]="k8s"
