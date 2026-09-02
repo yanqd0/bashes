@@ -28,6 +28,7 @@ function installer {
         [mold]="极速链接器，GNU ld 的现代化替代"
         [nvm]="Node 版本管理器，官方脚本安装到 ~/.nvm"
         [rclone]="命令行云存储同步工具，支持 40+ 存储后端"
+        [ripgrep]="grep 的现代化替代，以正则快速递归搜索文件内容"
         [rtk]="CLI 代理工具，减少 LLM token 消耗 60-90%"
         [rustup]="Rust 工具链管理器（使用阿里云镜像安装）"
         [stylua]="Lua 代码格式化工具，Rust 预编译"
@@ -61,7 +62,7 @@ function installer {
         [brew]="runtime" [deno]="runtime" [nvm]="runtime"
         [rustup]="runtime" [uv]="runtime"
         [rclone]="network" [v2rayN]="network"
-        [delta]="code" [difftastic]="code" [mint]="code" [stylua]="code"
+        [delta]="code" [difftastic]="code" [mint]="code" [ripgrep]="code" [stylua]="code"
         [hugo]="build" [hyperfine]="build" [mold]="build"
         ["codebase-memory-mcp"]="ai" ["llama.cpp"]="ai" [rtk]="ai"
     )
@@ -315,6 +316,10 @@ function _installer_is_installed {
     difftastic)
         # 二进制名 difft，与工具名不同
         command -v difft >/dev/null 2>&1
+        ;;
+    ripgrep)
+        # 二进制名 rg，与工具名不同
+        command -v rg >/dev/null 2>&1
         ;;
     llama.cpp)
         # 多二进制，任一存在即视为已装
