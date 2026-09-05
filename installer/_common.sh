@@ -23,6 +23,9 @@
 #   _i_path_warning "glow"
 #   _i_cleanup
 
+# 网络加速层（下载源测速/缓存/交互选择），定义见 installer/_net.sh
+source "$HOME/.bash/installer/_net.sh"
+
 # ============================================================================
 # 全局状态变量
 # ============================================================================
@@ -123,7 +126,7 @@ _i_rust_target() {
 # ---------------------------------------------------------------------------
 _i_setup() {
     # 重置本安装流的全局状态：上次失败若未走到 _i_cleanup，_I_VERSION 等可能残留
-    # 在交互 shell 中并污染本次安装（表现为“使用指定版本 xxx”而不重新检测版本）
+    # 在交互 shell 中并污染本次安装（表现为“使用指定版本 xxx”而不重新检测）
     unset _I_VERSION _I_TAG _I_ARCHIVED _I_MAIN_SUB _I_TMPDIR _I_INSTALL_COUNT
 
     _I_NAME="$1"
@@ -217,6 +220,28 @@ _i_detect_version() {
 }
 
 # ---------------------------------------------------------------------------
+# GitHub 下载源候选与 URL 构造（供 _net.sh 的 scheme "github" 使用）
+# 候选含“直连 GitHub”（sentinel __direct__）与各代理前缀，官方与代理同场测速；
+# 测速/下载 URL = 前缀 + 完整 github URL；__direct__ 则直接使用完整 github URL。
+# ---------------------------------------------------------------------------
+_gh_cand() {
+    cat <<'EOF'
+直连 GitHub|__direct__
+gh-proxy.com|https://gh-proxy.com/
+ghfast.top|https://ghfast.top/
+gh.ddlc.top|https://gh.ddlc.top/
+ghproxy.net|https://ghproxy.net/
+EOF
+}
+_gh_probe() {
+    if [ "$1" = "__direct__" ]; then
+        echo "${_GH_URL}"
+    else
+        echo "${1}${_GH_URL}"
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # _i_github_download <archive_name> <download_url_template>
 #
 # 下载管线：续传检测 → 版本检测 → 归档复用 → 下载 → 归档
@@ -238,8 +263,8 @@ _i_github_download() {
     local version_file="${_I_CACHE_DIR}/.version"
     local resuming=false
 
-    # 续传检测：存在非空(已有部分内容)的临时文件 且 .version 可读
-    # 0 字节残留（如 404/死链失败留下的空壳）不续传，避免被旧版本号卡死，应重新检测版本
+    # 续传检测：存在非空(已下载部分内容)的临时文件 且 .version 可读
+    # 0 字节残留（如因 404/死链失败留下的空壳）不续传，避免被旧版本号卡死，应重新检测版本
     if [ -s "$downloading" ] && [ -f "$version_file" ]; then
         local _resume_version
         _resume_version=$(cat "$version_file")
@@ -290,16 +315,81 @@ _i_github_download() {
         -e "s|<arch>|${_I_ARCH}|g" \
         -e "s|<target>|${_I_TARGET:-}|g")
 
-    if $resuming; then
-        echo "继续下载: ${download_url}"
-    else
-        echo "下载: ${download_url}"
-    fi
+    # GitHub 资产走加速层（仅对 github.com 下载 URL 生效）
+    case "$download_url" in
+    https://github.com/* | http://github.com/*)
+        local -a _gh_src=()
+        local _gh_mirror="${INSTALLER_MIRROR:-}"
+        local _gh_b _gh_eff _gh_ok=false
 
-    wget -c --show-progress -O "$downloading" "$download_url" || {
-        echo "[错误] 下载失败" >&2
-        return 1
-    }
+        if [ "$_gh_mirror" = "none" ]; then
+            _gh_src+=("__direct__")
+        elif [ -n "$_gh_mirror" ]; then
+            # 显式指定代理前缀（逗号分隔）：按给定顺序，末尾追加直连
+            local _gh_ifs=$IFS _gh_m
+            IFS=','
+            for _gh_m in $_gh_mirror; do
+                [ -n "$_gh_m" ] && _gh_src+=("$_gh_m")
+            done
+            IFS=$_gh_ifs
+        else
+            # 使用测速缓存/交互选择（scheme=github）；用户取消时 resolve 输出哨兵 __abort__
+            _GH_URL="$download_url"
+            while IFS= read -r _gh_b; do
+                if [ "$_gh_b" = "__abort__" ]; then
+                    unset _GH_URL
+                    echo "[已取消] 中止安装 ${_I_NAME:-}。" >&2
+                    return 1
+                fi
+                [ -n "$_gh_b" ] && _gh_src+=("$_gh_b")
+            done < <(_i_net_resolve github _gh_cand _gh_probe)
+            unset _GH_URL
+            # 测速无任何可用源（如被限速/临时故障）：退而求其次，按默认顺序试代理再直连
+            if [ "${#_gh_src[@]}" -eq 0 ]; then
+                echo "[提示] 测速暂无可用源，将按默认顺序尝试代理（最后直连）…" >&2
+                while IFS= read -r _gh_line; do
+                    _gh_b="${_gh_line#*|}"
+                    [ -n "$_gh_b" ] && [ "$_gh_b" != "__direct__" ] && _gh_src+=("$_gh_b")
+                done < <(_gh_cand)
+            fi
+        fi
+
+        # 兜底直连恒在末位（若已作为候选出现则不重复添加）
+        local _gh_has=false _gh_x
+        for _gh_x in "${_gh_src[@]}"; do
+            [ "$_gh_x" = "__direct__" ] && _gh_has=true
+        done
+        $_gh_has || _gh_src+=("__direct__")
+
+        for _gh_b in "${_gh_src[@]}"; do
+            if [ "$_gh_b" = "__direct__" ]; then
+                _gh_eff="$download_url"
+            else
+                _gh_eff="${_gh_b}${download_url}"
+            fi
+            if $resuming; then echo "继续下载: ${_gh_eff}"; else echo "下载: ${_gh_eff}"; fi
+            if wget -c --show-progress -O "$downloading" "$_gh_eff"; then
+                _gh_ok=true
+                break
+            fi
+            echo "[提示] 下载源失败，尝试下一源…" >&2
+            # 标记该源失效（从缓存剔除），避免近期反复试死链
+            [ "$_gh_b" != "__direct__" ] && _i_net_drop github "$_gh_b"
+        done
+        $_gh_ok || {
+            echo "[错误] 下载失败" >&2
+            return 1
+        }
+        ;;
+    *)
+        # 非 github.com 源：沿用直连单次下载
+        if $resuming; then echo "继续下载: ${download_url}"; else echo "下载: ${download_url}"; fi
+        wget -c --show-progress -O "$downloading" "$download_url" || {
+            echo "[错误] 下载失败" >&2
+            return 1
+        }
+        ;;
+    esac
 
     # 归档到版本子目录
     local archived="${_I_CACHE_DIR}/${_I_VERSION}/${archive_name}"
