@@ -37,6 +37,7 @@ function installer {
         [warp]="现代终端仿真器，支持 AI 辅助"
         [yazi]="终端文件管理器，支持预览与多面板"
         [zoxide]="智能 cd 替代，根据访问频率自动跳转"
+        [zig]="Zig 语言编译器，自带头文件与 std 库，官方预编译"
     )
 
     # -----------------------------------------------------------------------
@@ -60,7 +61,7 @@ function installer {
         [yazi]="terminal" [zoxide]="terminal"
         [helm]="k8s" [k9s]="k8s" [kubectl]="k8s"
         [brew]="runtime" [deno]="runtime" [nvm]="runtime"
-        [rustup]="runtime" [uv]="runtime"
+        [rustup]="runtime" [uv]="runtime" [zig]="runtime"
         [rclone]="network" [v2rayN]="network"
         [delta]="code" [difftastic]="code" [mint]="code" [ripgrep]="code" [stylua]="code"
         [hugo]="build" [hyperfine]="build" [mold]="build"

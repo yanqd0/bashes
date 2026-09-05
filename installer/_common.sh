@@ -445,6 +445,45 @@ _i_install_all() {
 }
 
 # ---------------------------------------------------------------------------
+# _i_install_tree <main_binary>
+# 整树安装：将解压目录中的全部内容（含随行子目录与点文件）拷贝到 _I_INSTALL_DIR，
+# 再为主二进制建立 ~/bin 软链。用于非单二进制、需随行资源目录的工具（如 zig 的 lib/）。
+# 主二进制在解压树中的相对路径存入 _I_MAIN_SUB（可能嵌于 bin/ 等子目录，自动定位）。
+# ---------------------------------------------------------------------------
+_i_install_tree() {
+    local main_bin="$1"
+
+    # 在解压树中定位可执行主程序（可能嵌在 bin/ 等子目录）
+    local rel
+    rel=$( (cd "$_I_TMPDIR" && find . -type f -name "$main_bin" -perm -u+x -print 2>/dev/null | head -1) )
+    rel="${rel#./}"
+    if [ -z "$rel" ] || [ ! -f "$_I_TMPDIR/$rel" ]; then
+        echo "[错误] 解压目录中未找到可执行主程序 ${main_bin}" >&2
+        return 1
+    fi
+    _I_MAIN_SUB="$rel"
+
+    echo "整树安装到 ${_I_INSTALL_DIR}/"
+    mkdir -p "$_I_INSTALL_DIR"
+    cp -a "$_I_TMPDIR"/. "$_I_INSTALL_DIR"/ || {
+        echo "[错误] 拷贝整树失败" >&2
+        return 1
+    }
+    chmod +x "${_I_INSTALL_DIR}/${_I_MAIN_SUB}"
+    echo "  主程序: ${_I_INSTALL_DIR}/${_I_MAIN_SUB}"
+    echo "  随行内容:"
+    (cd "$_I_TMPDIR" && ls -1) | sed 's/^/    /'
+
+    # 建立软链 ~/bin/<main_binary> -> <install_dir>/<sub>
+    if [ "$_I_SYMLINK_MODE" != "none" ]; then
+        mkdir -p "$_I_SYMLINK_DIR"
+        rm -f "${_I_SYMLINK_DIR}/${main_bin}"
+        ln -sf "${_I_INSTALL_DIR}/${_I_MAIN_SUB}" "${_I_SYMLINK_DIR}/${main_bin}"
+        echo "  ${_I_SYMLINK_DIR}/${main_bin} -> ${_I_INSTALL_DIR}/${_I_MAIN_SUB}"
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # _i_symlink_install <binary_name>
 # 创建软链接：_I_SYMLINK_DIR/<name> → _I_INSTALL_DIR/<name>
 # 若 _I_SYMLINK_MODE 为 "none"（用户自定义安装目录），则跳过
@@ -650,5 +689,5 @@ _i_cleanup() {
     unset _I_VERSION _I_TAG _I_OS _I_ARCH _I_TARGET
     unset _I_SYMLINK_DIR _I_BACKING_DIR _I_INSTALL_DIR _I_SYMLINK_MODE
     unset _I_CACHE_DIR _I_ARCHIVED _I_TMPDIR
-    unset _I_INSTALL_COUNT
+    unset _I_INSTALL_COUNT _I_MAIN_SUB
 }
