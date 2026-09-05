@@ -22,6 +22,16 @@
 #   _i_verify "${_I_INSTALL_DIR}/glow" "--version"
 #   _i_path_warning "glow"
 #   _i_cleanup
+#
+# 裸单二进制（非压缩包，如 herdr）示例：
+#   _i_setup "herdr" "herdrdev/herdr" "v0.8.2" "HERDR_VERSION"
+#   _i_check_installed "herdr" "--version"
+#   _i_download_single "herdr_<os>_<arch>" \
+#       "https://github.com/herdrdev/herdr/releases/download/<tag>/herdr-<os>-<arch>"
+#   _i_install_single "herdr"
+#   _i_verify "${_I_INSTALL_DIR}/herdr" "--version"
+#   _i_path_warning "herdr"
+#   _i_cleanup
 
 # 网络加速层（下载源测速/缓存/交互选择），定义见 installer/_net.sh
 source "$HOME/.bash/installer/_net.sh"
@@ -312,7 +322,7 @@ _gh_probe() {
 }
 
 # ---------------------------------------------------------------------------
-# _i_github_download <archive_name> <download_url_template>
+# _i_github_download <archive_name> <download_url_template> [raw]
 #
 # 下载管线：续传检测 → 版本检测 → 归档复用 → 下载 → 归档
 # 结果存入 _I_ARCHIVED
@@ -324,10 +334,15 @@ _gh_probe() {
 #   <os>     → 操作系统名（_I_OS）
 #   <arch>   → CPU 架构名（_I_ARCH）
 #   <target> → 目标三元组（_I_TARGET，需调用方预先设置）
+#
+# 第三个参数 [raw] 非空表示裸单二进制（非压缩包，如 herdr）。此时归档复用
+#   跳过 _i_check_archive 完整性校验（tar -tf 会对裸 ELF/Mach-O 误报损坏），
+#   改为「文件非空即视为可复用」。其余下载/续传/版本逻辑与归档模式一致。
 # ---------------------------------------------------------------------------
 _i_github_download() {
     local archive_name="$1"
     local url_template="$2"
+    local is_raw="${3:-}"
 
     local downloading="${_I_CACHE_DIR}/${archive_name}"
     local version_file="${_I_CACHE_DIR}/.version"
@@ -359,7 +374,17 @@ _i_github_download() {
         _i_detect_version
 
         local archived="${_I_CACHE_DIR}/${_I_VERSION}/${archive_name}"
-        if [ -f "$archived" ] && _i_check_archive "$archived"; then
+        # 归档复用校验：raw 模式只要求文件非空（裸二进制无法用 tar/unzip 校验），
+        # 归档模式走 _i_check_archive 完整性检查。
+        local _ok=false
+        if [ -f "$archived" ]; then
+            if [ -n "$is_raw" ]; then
+                [ -s "$archived" ] && _ok=true
+            else
+                _i_check_archive "$archived" && _ok=true
+            fi
+        fi
+        if $_ok; then
             echo "复用已缓存的文件: ${archived}"
             _I_ARCHIVED="$archived"
             return 0
@@ -467,6 +492,43 @@ _i_github_download() {
     mv "$downloading" "$archived"
     echo "已归档: ${archived}"
     _I_ARCHIVED="$archived"
+}
+
+# ---------------------------------------------------------------------------
+# _i_download_single <file_name> <download_url_template>
+# 下载裸单二进制（非压缩包，如 herdr 的原始可执行文件）到版本化缓存。
+# 内部复用 _i_github_download 的完整管线（加速镜像/续传/缓存/归档），
+# 但以 raw 模式跳过 tar/unzip 完整性校验。结果存入 _I_ARCHIVED。
+# 下载源/占位符约定同 _i_github_download。
+# ---------------------------------------------------------------------------
+_i_download_single() {
+    local file_name="$1"
+    local url_template="$2"
+    _i_github_download "$file_name" "$url_template" raw || return 1
+}
+
+# ---------------------------------------------------------------------------
+# _i_install_single <binary_name>
+# 把已下载的裸单二进制（_I_ARCHIVED）直接安装为 <binary_name>：
+#   拷贝为 _I_INSTALL_DIR/<binary_name> → chmod +x → 建软链。
+# 与 _i_install_one 的差别在于源是下载缓存文件而非解压树。
+# ---------------------------------------------------------------------------
+_i_install_single() {
+    local name="$1"
+    local src="${_I_ARCHIVED:-}"
+
+    if [ -z "$src" ] || [ ! -f "$src" ]; then
+        echo "[错误] 未找到已下载的二进制文件（_I_ARCHIVED 为空）" >&2
+        return 1
+    fi
+
+    echo "安装 ${name} 到 ${_I_INSTALL_DIR}/"
+    mkdir -p "$_I_INSTALL_DIR"
+    cp -f "$src" "${_I_INSTALL_DIR}/${name}"
+    chmod +x "${_I_INSTALL_DIR}/${name}"
+    echo "  ${name}"
+
+    _i_symlink_install "$name"
 }
 
 # ---------------------------------------------------------------------------

@@ -17,6 +17,7 @@ function installer {
         [fd]="find 的现代化替代，语法简洁搜索极快"
         [gh]="GitHub 官方命令行客户端，管理仓库、Issue、PR 等"
         [glow]="终端 Markdown 预览工具"
+        [herdr]="tmux 现代替代：Rust 终端复用器，托管编码代理会话"
         [helm]="Kubernetes 包管理器，通过 get.helm.sh CDN 安装"
         [hexyl]="十六进制查看器，语法着色，比 xxd/od 更直观"
         [hugo]="Go 语言静态网站生成器，构建速度极快"
@@ -57,7 +58,7 @@ function installer {
     local -a cat_order=(terminal k8s runtime network code build ai)
     cat=(
         [bat]="terminal" [caddy]="network" [eza]="terminal" [fd]="terminal"
-        [gh]="code" [glow]="terminal" [hexyl]="terminal" [warp]="terminal"
+        [gh]="code" [glow]="terminal" [herdr]="terminal" [hexyl]="terminal" [warp]="terminal"
         [yazi]="terminal" [zoxide]="terminal"
         [helm]="k8s" [k9s]="k8s" [kubectl]="k8s"
         [brew]="runtime" [deno]="runtime" [nvm]="runtime"
