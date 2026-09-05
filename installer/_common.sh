@@ -140,6 +140,13 @@ _i_setup() {
     _I_INSTALL_DIR="${_I_BACKING_DIR}" # 版本确定后重算为 $_I_BACKING_DIR/$_I_VERSION
     _I_CACHE_DIR="$HOME/Downloads/installer/${_I_NAME}"
     mkdir -p "$_I_CACHE_DIR"
+
+    # installer --version 标志指定版本：直接写入 _I_VERSION，使后续版本探测
+    # （含 zig 等自写探测逻辑的脚本）无需联网即可采用该版本。
+    # 工具自带的环境变量（如 ZIG_VERSION）由安装脚本在 _i_setup 之后自行覆盖。
+    if [ -n "${INSTALLER_VERSION:-}" ]; then
+        _I_VERSION="$INSTALLER_VERSION"
+    fi
 }
 
 # ---------------------------------------------------------------------------
@@ -155,13 +162,71 @@ _i_set_install_dir() {
 }
 
 # ---------------------------------------------------------------------------
+# _i_switch_version <cmd> <ver_args>
+# 指定版本已存在于版本化存储：把软链直接指向该版本并验证，无需重新下载安装。
+# 适用条件：_I_SYMLINK_MODE=auto（版本化存储）且 _I_VERSION 指向具体版本。
+# 成功切换返回 0（调用方据此跳过后续下载）；版本目录缺失/不可用返回 1 走常规流程。
+# ---------------------------------------------------------------------------
+_i_switch_version() {
+    local cmd="$1"
+    local ver_args="${2:---version}"
+    local vdir="${_I_BACKING_DIR}/${_I_VERSION}"
+    local bin=""
+
+    # 该版本目录不存在 → 尚未安装，交由常规流程下载
+    [ -d "$vdir" ] || return 1
+
+    if [ -x "$vdir/$cmd" ]; then
+        bin="$vdir/$cmd"
+    else
+        # 整树安装（如 zig）主程序可能嵌于子目录，递归定位
+        bin=$( (cd "$vdir" && find . -type f -name "$cmd" -perm -u+x -print 2>/dev/null | head -1) )
+        [ -n "$bin" ] && bin="${vdir}/${bin#./}"
+    fi
+
+    if [ -z "$bin" ] || [ ! -x "$bin" ]; then
+        echo "[提示] ${_I_NAME} 版本目录 ${_I_VERSION} 存在但未找到可执行主程序，将重新安装" >&2
+        return 1
+    fi
+    if ! "$bin" $ver_args >/dev/null 2>&1; then
+        echo "[提示] ${_I_NAME} 已装版本 ${_I_VERSION} 不可执行，将重新安装" >&2
+        return 1
+    fi
+
+    mkdir -p "$_I_SYMLINK_DIR"
+    ln -sf "$bin" "${_I_SYMLINK_DIR}/${cmd}"
+    echo "${_I_NAME} 版本 ${_I_VERSION} 已安装，直接切换："
+    echo "  ${_I_SYMLINK_DIR}/${cmd} -> ${bin}"
+    "$bin" $ver_args 2>/dev/null
+    return 0
+}
+
+# ---------------------------------------------------------------------------
 # _i_check_installed <check_cmd> [version_args]
 # 检查工具是否已安装，提示是否强制重新安装
 # 用户取消时返回 1，调用方应 return 0
+# 额外能力：指定了具体版本（_I_VERSION 非空）且该版本已在版本化存储中时，
+#   直接切换软链并返回 1（跳过下载），见 _i_switch_version。
 # ---------------------------------------------------------------------------
 _i_check_installed() {
     local cmd="$1"
     local ver_args="${2:---version}"
+
+    # installer --version 标志优先级最高：覆盖安装脚本从专属环境变量读入的版本
+    if [ -n "${INSTALLER_VERSION:-}" ] && [ "$INSTALLER_VERSION" != "${_I_VERSION:-}" ]; then
+        _I_VERSION="$INSTALLER_VERSION"
+    fi
+
+    # 指定版本（installer --version / 工具专属环境变量）已装 → 直接切换，无需下载
+    if [ -n "${_I_VERSION:-}" ] && [ "$_I_SYMLINK_MODE" != "none" ]; then
+        if _i_switch_version "$cmd" "$ver_args"; then
+            return 1  # 已切换；调用方以 ... || return 0 收尾，跳过后续下载安装
+        fi
+        # 指定版本未安装、但当前已有其他版本：直接进入下载（新增该版本），不再询问
+        if command -v "$cmd" &>/dev/null; then
+            return 0
+        fi
+    fi
 
     if command -v "$cmd" &>/dev/null; then
         echo "${_I_NAME} 已安装，当前版本："
@@ -186,6 +251,11 @@ _i_check_installed() {
 # 若调用前已设置 _I_VERSION（如通过环境变量），则跳过检测
 # ---------------------------------------------------------------------------
 _i_detect_version() {
+    # installer --version 标志优先级最高：若与已解析版本不同则覆盖之
+    if [ -n "${INSTALLER_VERSION:-}" ] && [ "$INSTALLER_VERSION" != "${_I_VERSION:-}" ]; then
+        _I_VERSION="$INSTALLER_VERSION"
+    fi
+
     # 若调用方已通过环境变量等方式设置了 _I_VERSION，直接使用
     if [ -n "${_I_VERSION:-}" ]; then
         echo "使用指定版本: ${_I_VERSION}"

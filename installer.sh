@@ -70,12 +70,17 @@ function installer {
 
     # -----------------------------------------------------------------------
     # 命令行解析
+    #   --version 需紧跟版本号，可位于工具名之前或之后（如 installer zig --version 0.15.2）。
+    #   首个非选项 token 视为工具名；继续扫描以捕获后置的 --version。
     # -----------------------------------------------------------------------
     local opt_help=false
     local opt_list=false
     local opt_pick=true
     local opt_migrate=false
+    local opt_version=""
     local tool_name=""
+    # 局部版本请求，避免污染外层 shell 环境（installer --version 只在本次生效）
+    local INSTALLER_VERSION=""
 
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -101,6 +106,15 @@ function installer {
             opt_pick=false
             shift
             ;;
+        --version)
+            shift
+            if [ $# -eq 0 ]; then
+                echo "installer: --version 需要一个版本号参数" >&2
+                return 1
+            fi
+            opt_version="$1"
+            shift
+            ;;
         --)
             shift
             [ $# -gt 0 ] && tool_name="$1"
@@ -115,11 +129,13 @@ function installer {
             return 1
             ;;
         *)
-            tool_name="$1"
-            opt_list=false
-            opt_pick=false
+            # 首个非选项 token 视为工具名；仅保留第一个，继续扫描后续 --version
+            if [ -z "$tool_name" ]; then
+                tool_name="$1"
+                opt_list=false
+                opt_pick=false
+            fi
             shift
-            break
             ;;
         esac
     done
@@ -127,6 +143,12 @@ function installer {
     # 不接受选项后还拼一个工具名（除了 --list 和 --help 互相兼容）
     if [ -n "$tool_name" ] && $opt_migrate; then
         echo "installer: --migrate 不接受工具名参数" >&2
+        return 1
+    fi
+
+    # --version 需配合具体工具名使用（安装/切换该工具的指定版本）
+    if [ -n "$opt_version" ] && [ -z "$tool_name" ] && ! $opt_help && ! $opt_migrate; then
+        echo "installer: --version 需要与工具名一起使用，例如: installer --version 0.15.2 zig" >&2
         return 1
     fi
 
@@ -142,9 +164,15 @@ function installer {
   -l, --list      分组列出可安装的工具（已安装标 ✓，过长时分屏）
   -f, --pick      用 fzf 交互选择器挑选工具安装
   -m, --migrate   将 ~/bin/ 下的扁平二进制迁移到版本化存储
+  --version <版本> 安装/切换到指定版本；该版本已在版本化存储时直接切换，不重复下载
 
 无选项时，installer <名称> 安装指定工具。
 不带任何参数则进入 fzf 选择器；无 fzf 或非终端时回退为分组列表。
+
+示例:
+  installer zig                 # 安装最新稳定版
+  installer --version 0.15.2 zig   # 安装/切换到 zig 0.15.2
+  installer zig --version 0.15.2  # 同上（选项也可放在工具名之后）
 EOF
         return 0
     fi
@@ -159,7 +187,8 @@ EOF
     fi
 
     # 无参默认 fzf，但无 fzf 或非交互 TTY：退化为分组列表
-    if $opt_pick && { [ ! -t 1 ] || ! command -v fzf >/dev/null 2>&1; }; then
+    # （已给定工具名时不退化，直接进入安装）
+    if $opt_pick && [ -z "$tool_name" ] && { [ ! -t 1 ] || ! command -v fzf >/dev/null 2>&1; }; then
         if [ ! -t 1 ]; then
             echo "installer: 非终端环境，退化为分组列表显示" >&2
         else
@@ -212,9 +241,9 @@ EOF
     fi
 
     # -----------------------------------------------------------------------
-    # fzf 选择器（无参默认）：过滤选工具并安装
+    # fzf 选择器（无参默认）：过滤选工具并安装（若已给工具名则直接安装，忽略 -f）
     # -----------------------------------------------------------------------
-    if $opt_pick; then
+    if $opt_pick && [ -z "$tool_name" ]; then
         local -a choices=() names=()
         local name
         while IFS= read -r name; do names+=("$name"); done < <(_installer_collect_tools)
@@ -236,6 +265,7 @@ EOF
     # -----------------------------------------------------------------------
     # 安装指定工具
     # -----------------------------------------------------------------------
+    INSTALLER_VERSION="$opt_version"  # 供 _common.sh 版本探测/切换使用（工具脚本内部可见）
     local script="$installer_dir/$tool_name.sh"
     if [ -f "$script" ]; then
         source "$script"
