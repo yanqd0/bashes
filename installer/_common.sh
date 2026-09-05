@@ -122,6 +122,10 @@ _i_rust_target() {
 # 初始化基本配置：名称、仓库、回退版本、安装/缓存目录
 # ---------------------------------------------------------------------------
 _i_setup() {
+    # 重置本安装流的全局状态：上次失败若未走到 _i_cleanup，_I_VERSION 等可能残留
+    # 在交互 shell 中并污染本次安装（表现为“使用指定版本 xxx”而不重新检测版本）
+    unset _I_VERSION _I_TAG _I_ARCHIVED _I_MAIN_SUB _I_TMPDIR _I_INSTALL_COUNT
+
     _I_NAME="$1"
     _I_REPO="$2"
     _I_FALLBACK="$3"
@@ -234,9 +238,9 @@ _i_github_download() {
     local version_file="${_I_CACHE_DIR}/.version"
     local resuming=false
 
-    # 续传检测：临时文件存在 且 .version 可读
-    # 若调用方已设置 _I_VERSION（如通过环境变量），先比较：不同则丢弃旧下载
-    if [ -f "$downloading" ] && [ -f "$version_file" ]; then
+    # 续传检测：存在非空(已有部分内容)的临时文件 且 .version 可读
+    # 0 字节残留（如 404/死链失败留下的空壳）不续传，避免被旧版本号卡死，应重新检测版本
+    if [ -s "$downloading" ] && [ -f "$version_file" ]; then
         local _resume_version
         _resume_version=$(cat "$version_file")
         if [ -n "${_I_VERSION:-}" ] && [ "$_I_VERSION" != "$_resume_version" ]; then
